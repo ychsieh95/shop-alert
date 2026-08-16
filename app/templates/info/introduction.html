@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Introduction') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero introduction-info-hero">
+  <div class="container info-hero-inner">
+    <div>
+      <div class="eyebrow"><span></span> {{ t('About ShopAlert') }}</div>
+      <h1>{{ t('A clearer community record of shop experiences') }}</h1>
+      <p>{{ t('ShopAlert helps people find and document community reports about physical and online shops, with context and supporting evidence.') }}</p>
+    </div>
+    <div class="info-hero-mark info-hero-mark-introduction" aria-hidden="true">
+      <svg viewBox="0 0 120 120"><path d="M22 34h76v58H22z"/><path d="M17 34h86L93 17H27zM38 34v58M82 34v58"/><path d="M49 52h22M49 65h22M49 78h14"/><circle cx="89" cy="86" r="17"/><path d="m82 86 5 5 10-12"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="info-page introduction-page">
+  <div class="container introduction-container">
+    <div class="introduction-lead">
+      <p class="eyebrow eyebrow-dark"><span></span> {{ t('Why it exists') }}</p>
+      <h2>{{ t('Useful reports need more than a rating') }}</h2>
+      <p>{{ t('A rating can show sentiment, but it rarely explains what happened. ShopAlert gives each report room for a factual description, source links, hashtags, shop details, and supporting images or video.') }}</p>
+    </div>
+
+    <div class="introduction-values">
+      <article><span aria-hidden="true">01</span><h3>{{ t('Discover') }}</h3><p>{{ t('Search reports by keyword or hashtag, or use an optional nearby search for physical shops.') }}</p></article>
+      <article><span aria-hidden="true">02</span><h3>{{ t('Document') }}</h3><p>{{ t('Create a structured report with the shop, what you directly observed, relevant links, and supporting media.') }}</p></article>
+      <article><span aria-hidden="true">03</span><h3>{{ t('Maintain') }}</h3><p>{{ t('Authors can update their reports, while signed-in community members can raise concerns with the site administrator.') }}</p></article>
+    </div>
+
+    <section class="introduction-flow" aria-labelledby="introduction-flow-title">
+      <header><p class="eyebrow eyebrow-dark"><span></span> {{ t('How it works') }}</p><h2 id="introduction-flow-title">{{ t('From an experience to a useful record') }}</h2></header>
+      <ol>
+        <li><span>1</span><div><h3>{{ t('Check existing reports') }}</h3><p>{{ t('Search first to understand what the community has already documented about a shop.') }}</p></div></li>
+        <li><span>2</span><div><h3>{{ t('Share what you know') }}</h3><p>{{ t('Sign in, describe your direct experience clearly, and attach evidence you are authorized to publish.') }}</p></div></li>
+        <li><span>3</span><div><h3>{{ t('Keep it accurate') }}</h3><p>{{ t('Review your published report and edit it when details need correction or useful context changes.') }}</p></div></li>
+      </ol>
+    </section>
+
+    <aside class="introduction-responsibility">
+      <span aria-hidden="true">!</span>
+      <div><h2>{{ t('A community record, not a verdict') }}</h2><p>{{ t('Reports are user-submitted allegations and are not automatically verified facts. Evidence and source links provide context but do not guarantee that every claim is complete or correct. Readers should review material critically, and contributors must avoid speculation, harassment, and unnecessary personal information.') }}</p><a href="{{ url_for('main.privacy') }}">{{ t('Read the privacy policy') }} →</a></div>
+    </aside>
+
+    <div class="introduction-actions">
+      <div><h2>{{ t('Start with the community record') }}</h2><p>{{ t('Browse what has already been shared, or add a careful report of your own.') }}</p></div>
+      <div><a class="button button-outline" href="{{ url_for('main.home') }}#reports">{{ t('Explore reports') }}</a><a class="button button-coral" href="{{ url_for('main.create_report') }}">{{ t('Share a report') }}</a></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

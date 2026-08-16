@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}{{ report.name }} — ShopAlert{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <div class="container">
+    <a class="back-link" href="{{ url_for('main.home') }}#reports">← {{ t('Back to reports') }}</a>
+    <div class="detail-heading">
+      <div>
+        <div class="eyebrow"><span></span> {{ t('Archived report') if report.archived_at else t('Community-submitted report') }}</div>
+        <h1>{{ report.name }}</h1>
+        {% if report.is_online %}
+          <p class="detail-address"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/></svg>{{ t('Online shop') }}</p>
+        {% else %}
+          <p class="detail-address"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>{{ report.localized_address(locale) }}</p>
+        {% endif %}
+        {% if report.hashtags %}
+          <nav class="hashtag-list hashtag-list-detail" aria-label="{{ t('Hashtags') }}">
+            {% for hashtag in report.hashtags %}<a class="hashtag-chip" href="{{ url_for('main.home', q=hashtag) }}#reports">#{{ hashtag }}</a>{% endfor %}
+          </nav>
+        {% endif %}
+      </div>
+      <div class="detail-date">
+        <div class="detail-timestamp">
+          <span class="timestamp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span>
+          <span><small>{{ t('Reported') }}</small><strong><time datetime="{{ report.created_at|datetime_iso_utc }}" data-local-time><span data-local-time-value>{{ report.created_at|format_local_datetime }}</span> <i data-local-timezone>{{ timezone_name }}</i></time></strong></span>
+        </div>
+        {% if report.has_been_updated %}
+          <div class="detail-timestamp detail-timestamp-updated">
+            <span class="timestamp-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66L20 8"/><path d="M20 3v5h-5M12 8v5l3 2"/></svg></span>
+            <span><small>{{ t('Last updated') }}</small><strong><time datetime="{{ report.updated_at|datetime_iso_utc }}" data-local-time><span data-local-time-value>{{ report.updated_at|format_local_datetime }}</span> <i data-local-timezone>{{ timezone_name }}</i></time></strong></span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="owner-report-actions">
+      {% if current_user.is_authenticated and current_user.id == report.author_id and not report.archived_at %}
+        <a class="button button-coral" href="{{ url_for('main.edit_report', report_guid=report.guid) }}">{{ t('Edit report') }} <span aria-hidden="true">→</span></a>
+      {% endif %}
+      <button class="button button-report-item" type="button" data-contact-dialog-open>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.6 2.4 17.2A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.8L13.7 3.6a2 2 0 0 0-3.4 0Z"/></svg>
+        {{ t('Report this item') }}
+      </button>
+    </div>
+  </div>
+</section>
+
+<section class="detail-content">
+  <div class="container detail-grid">
+    <div class="detail-main">
+      <div class="notice-card"><span>!</span><p><strong>{{ t('Read with context.') }}</strong> {{ t('This is a community allegation and has not been independently verified by ShopAlert.') }}</p></div>
+      <article class="story-card">
+        <div class="story-heading"><span>{{ t('Report') }}</span><h2>{{ t('What was documented') }}</h2></div>
+        <div class="story-text">{{ report.controversy|normalize_line_breaks }}</div>
+        {% if report.controversy_links %}
+          <div class="story-links">
+            <span class="sidebar-label">{{ t('Controversy links') }}</span>
+            <div class="social-list controversy-link-list">
+              {% for link in report.controversy_links %}
+                <a href="{{ link }}" target="_blank" rel="nofollow noopener noreferrer" data-controversy-link data-preview-url="{{ url_for('main.controversy_link_preview', report_guid=report.guid, link_index=loop.index0) }}"><span class="controversy-link-url">{{ link }}</span><span aria-hidden="true">↗</span></a>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </article>
+      <section class="evidence-section">
+        <div class="evidence-heading"><div><span>{{ t('Evidence') }}</span><h2>{{ t('Supporting media') }}</h2></div><small>{% if locale == 'zh-TW' %}{{ report.media|length }} 個檔案{% else %}{{ report.media|length }} file{% if report.media|length != 1 %}s{% endif %}{% endif %}</small></div>
+        <div class="evidence-gallery" data-evidence-gallery>
+          <div class="evidence-gallery-stage">
+            <output class="evidence-gallery-index" data-evidence-index data-index-label="{{ t('Media item') }}" aria-live="polite" aria-label="{{ t('Media item') }} 1 / {{ report.media|length }}"><span data-evidence-index-current>1</span><i aria-hidden="true">/</i><span>{{ report.media|length }}</span></output>
+            {% for media in report.media %}
+              <figure
+                class="evidence-gallery-slide{% if loop.first %} is-active{% endif %}"
+                data-evidence-slide="{{ loop.index0 }}"
+                {% if not loop.first %}hidden{% endif %}
+              >
+                {% if media.media_type == 'image' %}
+                  <a href="{{ url_for('main.proof_media', media_id=media.id) }}" data-evidence-lightbox data-image-alt="{{ ('提交的證據：' if locale == 'zh-TW' else 'Submitted evidence: ') ~ media.original_name }}">
+                    <img src="{{ url_for('main.proof_media', media_id=media.id) }}" alt="{{ ('提交的證據：' if locale == 'zh-TW' else 'Submitted evidence: ') ~ media.original_name }}" {% if not loop.first %}loading="lazy"{% endif %}>
+                  </a>
+                {% else %}
+                  <video controls preload="metadata" playsinline>
+                    <source src="{{ url_for('main.proof_media', media_id=media.id) }}" type="{{ media.mime_type }}">
+                    {{ '你的瀏覽器不支援此影片。' if locale == 'zh-TW' else 'Your browser does not support this video.' }}
+                  </video>
+                {% endif %}
+                <figcaption>{{ media.original_name }}</figcaption>
+              </figure>
+            {% endfor %}
+          </div>
+          {% if report.media|length > 1 %}
+            <div class="evidence-gallery-thumbnails" aria-label="{{ t('Supporting media') }}">
+              {% for media in report.media %}
+                <button
+                  class="evidence-gallery-thumbnail{% if loop.first %} is-active{% endif %}"
+                  type="button"
+                  data-evidence-thumbnail="{{ loop.index0 }}"
+                  aria-label="{{ media.original_name }}"
+                  aria-pressed="{{ 'true' if loop.first else 'false' }}"
+                >
+                  {% if media.media_type == 'image' %}
+                    <img src="{{ url_for('main.proof_media', media_id=media.id) }}" alt="" loading="lazy">
+                  {% else %}
+                    <video src="{{ url_for('main.proof_media', media_id=media.id) }}" preload="metadata" muted playsinline></video>
+                    <span class="evidence-gallery-play" aria-hidden="true">
+                      <svg viewBox="0 0 24 24"><path d="m9 7 8 5-8 5Z"/></svg>
+                    </span>
+                  {% endif %}
+                </button>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <aside class="detail-sidebar">
+      <div class="sidebar-card">
+        <span class="sidebar-label">{{ t('Shop information') }}</span>
+        <div class="sidebar-row"><small>{{ t('Name') }}</small><strong>{{ report.name }}</strong></div>
+        <div class="sidebar-row"><small>{{ t('Address') }}</small><p>{{ t('Online shop') if report.is_online else report.localized_address(locale) }}</p></div>
+        {% if not report.is_online and report.latitude is not none %}
+          <a class="button button-outline button-full" href="https://www.google.com/maps/search/?api=1&query={{ report.latitude }},{{ report.longitude }}" target="_blank" rel="noopener">{{ t('View on map') }} ↗</a>
+        {% endif %}
+      </div>
+      {% if report.social_links %}
+        <div class="sidebar-card">
+          <span class="sidebar-label">{{ t('Official profiles') }}</span>
+          <div class="social-list">
+            {% for platform, link in report.social_links.items() %}
+              <a href="{{ link }}" target="_blank" rel="nofollow noopener">{{ platform|title }} <span>↗</span></a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+      <div class="sidebar-card byline-card">
+        {% if report.author.profile_image_name %}<img class="avatar" src="{{ url_for('main.profile_picture', user_id=report.author.id) }}" alt="">{% else %}<span class="avatar">{{ report.author.display_name[0]|upper }}</span>{% endif %}
+        <div><small>{{ t('Shared by') }}</small><strong>{{ report.author.display_name }}</strong><p>{{ t('Community member') }}</p></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<dialog class="image-lightbox" data-image-lightbox aria-label="{{ t('Image preview') }}">
+  <div class="image-lightbox-frame">
+    <button type="button" class="image-lightbox-close" data-lightbox-close aria-label="{{ t('Close image preview') }}">×</button>
+    <img src="" alt="" data-lightbox-image>
+    <p data-lightbox-caption></p>
+  </div>
+</dialog>
+
+<dialog class="link-preview-dialog" data-link-preview-dialog aria-labelledby="link-preview-title">
+  <div class="link-preview-frame">
+    <button type="button" class="dialog-close" data-link-preview-close aria-label="{{ t('Close link preview') }}">×</button>
+    <div class="link-preview-heading">
+      <p class="eyebrow eyebrow-dark"><span></span> {{ t('External page preview') }}</p>
+      <h2 id="link-preview-title">{{ t('Review this link') }}</h2>
+      <p>{{ t('Check the server-generated screenshot before deciding whether to leave ShopAlert.') }}</p>
+    </div>
+    <div class="link-preview-browser">
+      <div class="link-preview-toolbar"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span><strong data-link-preview-host></strong></div>
+      <div class="link-preview-image-wrap">
+        <p class="link-preview-loading" data-link-preview-loading>{{ t('Checking the URL and generating a preview…') }}</p>
+        <img data-link-preview-image alt="{{ t('Screenshot of the external page') }}" hidden>
+        <p class="link-preview-error" data-link-preview-error hidden>{{ t('The safety check or screenshot failed. ShopAlert blocked this link.') }}</p>
+      </div>
+    </div>
+    <p class="link-preview-status" data-link-preview-status hidden></p>
+    <p class="link-preview-note">{{ t('ShopAlert captures and caches this screenshot on the server. The external page may have changed since it was captured.') }}</p>
+    <code class="link-preview-url" data-link-preview-url></code>
+    <div class="link-preview-actions">
+      <button class="button button-outline" type="button" data-link-preview-close>{{ t('Stay here') }}</button>
+      <a class="button button-coral" target="_blank" rel="nofollow noopener noreferrer" data-link-preview-continue aria-disabled="true">{{ t('Go to page') }} <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="report-contact-dialog" data-contact-dialog aria-labelledby="report-contact-title">
+  <div class="report-contact-frame" id="report-contact">
+    <button type="button" class="dialog-close" data-contact-dialog-close aria-label="{{ t('Close contact window') }}">×</button>
+    <div class="report-contact-heading">
+      <span class="contact-dialog-icon" aria-hidden="true">!</span>
+      <div><p class="eyebrow eyebrow-dark"><span></span> {{ t('Report this item') }}</p><h2 id="report-contact-title">{{ t('Contact the administrator') }}</h2></div>
+    </div>
+    <p class="report-contact-intro">{{ t('Tell the site administrator what is wrong with this report. Your message will be linked to this item.') }}</p>
+    {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('main.contact_report_admin', report_guid=report.guid) }}" class="report-contact-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>{{ t('Reason') }} <span>*</span>
+          <select name="reason" required>
+            <option value="">{{ t('Choose a reason') }}</option>
+            {% for value, label in contact_reasons.items() %}<option value="{{ value }}">{{ t(label) }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>{{ t('Reply email') }} <span>*</span><input type="email" name="reply_email" value="{{ current_user.email }}" maxlength="255" required></label>
+        <label>{{ t('Message') }} <span>*</span><textarea name="details" rows="6" minlength="20" maxlength="2000" required placeholder="{{ t('Describe the issue and identify the relevant part of the report.') }}"></textarea></label>
+        <button class="button button-coral button-full" type="submit">{{ t('Send to administrator') }} <span aria-hidden="true">→</span></button>
+      </form>
+    {% else %}
+      <div class="contact-login-prompt">
+        <p>{{ t('Sign in to contact the administrator about this report.') }}</p>
+        <a class="button button-coral button-full" href="{{ url_for('auth.login', next=request.path) }}">{{ t('Sign in and continue') }} <span aria-hidden="true">→</span></a>
+      </div>
+    {% endif %}
+  </div>
+</dialog>
+{% endblock %}

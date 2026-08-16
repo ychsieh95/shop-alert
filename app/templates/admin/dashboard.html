@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Administration') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero admin-dashboard-hero">
+  <div class="container info-hero-inner">
+    <div><div class="eyebrow"><span></span> {{ t('Administration') }}</div><h1>{{ t('Reports and users') }}</h1><p>{{ t('Moderate submitted reports and manage account access.') }}</p></div>
+    <a class="button button-coral" href="{{ url_for('main.admin_report_contacts') }}">{{ t('Admin inbox') }} · {{ open_contact_count }}</a>
+  </div>
+</section>
+
+<section class="info-page admin-dashboard-page">
+  <div class="container">
+    <nav class="admin-section-nav" aria-label="{{ t('Administration') }}"><a href="#reports">{{ t('Reports') }} · {{ reports|length }}</a><a href="#users">{{ t('Users') }} · {{ users|length }}</a></nav>
+
+    <section class="admin-management-section" id="reports">
+      <div class="section-heading"><div><div class="eyebrow eyebrow-dark"><span></span> {{ t('Content moderation') }}</div><h2>{{ t('Reports') }}</h2><p>{{ t('Archive a report to hide it publicly, or permanently delete it and its evidence.') }}</p></div></div>
+      <div class="admin-record-list">
+        {% for report in reports %}
+          <article class="admin-record-card{% if report.archived_at %} is-archived{% endif %}">
+            <div class="admin-record-copy">
+              <span class="contact-status{% if report.archived_at %} status-archived{% endif %}">{{ t('Archived') if report.archived_at else t('Published') }}</span>
+              <h3><a href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ report.name }}</a></h3>
+              <p>{{ report.author.display_name }} · <time datetime="{{ report.created_at|datetime_iso_utc }}" data-local-time data-local-time-precision="date"><span data-local-time-value>{{ report.created_at|format_local_datetime('date') }}</span></time></p>
+            </div>
+            <div class="admin-record-actions">
+              <a class="button button-outline" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ t('View') }}</a>
+              <form method="post" action="{{ url_for('main.admin_archive_report', report_guid=report.guid) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button button-dark" type="submit">{{ t('Restore') if report.archived_at else t('Archive') }}</button>
+              </form>
+              <form method="post" action="{{ url_for('main.admin_delete_report', report_guid=report.guid) }}" onsubmit="return confirm('{{ t('Permanently delete this report and all evidence?') }}')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button button-danger" type="submit">{{ t('Delete') }}</button>
+              </form>
+            </div>
+          </article>
+        {% else %}
+          <div class="empty-state"><h2>{{ t('No reports found') }}</h2></div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="admin-management-section" id="users">
+      <div class="section-heading"><div><div class="eyebrow eyebrow-dark"><span></span> {{ t('Account access') }}</div><h2>{{ t('Users') }}</h2><p>{{ t('Ban or restore accounts and set a replacement password.') }}</p></div></div>
+      <div class="admin-user-grid">
+        {% for user in users %}
+          <article class="admin-user-card{% if user.is_banned %} is-banned{% endif %}">
+            <header>
+              {% if user.profile_image_name %}<img class="profile-avatar" src="{{ url_for('main.profile_picture', user_id=user.id) }}" alt="">{% else %}<span class="profile-avatar profile-avatar-fallback" aria-hidden="true">{{ user.display_name[0]|upper }}</span>{% endif %}
+              <div><span class="contact-status {{ 'status-archived' if user.is_banned else 'status-active' }}">{{ t('Banned') if user.is_banned else t('Active') }}</span><h3>{{ user.display_name }}</h3><p>@{{ user.username }} · {{ user.email }}</p></div>
+            </header>
+            <dl><div><dt>{{ t('Reports') }}</dt><dd>{{ user.reports|length }}</dd></div><div><dt>{{ t('Joined') }}</dt><dd><time datetime="{{ user.created_at|datetime_iso_utc }}" data-local-time data-local-time-precision="date"><span data-local-time-value>{{ user.created_at|format_local_datetime('date') }}</span></time></dd></div></dl>
+            <div class="admin-user-controls">
+              {% set is_admin_account = admin_email and user.email|lower == admin_email %}
+              <form method="post" action="{{ url_for('main.admin_ban_user', user_id=user.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if is_admin_account %}
+                  <button class="button button-outline" type="submit" disabled>{{ t('Ban user') }}</button>
+                  <p class="admin-user-note">{{ t('The configured administrator account cannot be banned.') }}</p>
+                {% else %}
+                  <button class="button {{ 'button-outline' if user.is_banned else 'button-danger' }}" type="submit">{{ t('Remove ban') if user.is_banned else t('Ban user') }}</button>
+                {% endif %}
+              </form>
+              <form class="admin-password-form" method="post" action="{{ url_for('main.admin_reset_user_password', user_id=user.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label><span>{{ t('New password') }}</span><input type="password" name="new_password" minlength="8" autocomplete="new-password" required></label>
+                <label><span>{{ t('Confirm new password') }}</span><input type="password" name="confirm_password" minlength="8" autocomplete="new-password" required></label>
+                <button class="button button-dark" type="submit">{{ t('Reset password') }}</button>
+              </form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</section>
+{% endblock %}

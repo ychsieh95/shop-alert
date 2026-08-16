@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-orbit hero-orbit-one"></div>
+  <div class="hero-orbit hero-orbit-two"></div>
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <div class="eyebrow"><span></span> {{ t('Community-powered accountability') }}</div>
+      <h1>{{ t('Know the story') }}<br><em>{{ t('behind the storefront.') }}</em></h1>
+      <p>{{ t('Find and share documented concerns about local shops—so everyone can make more informed choices.') }}</p>
+      <div class="hero-actions">
+        <a class="button button-coral" href="#reports">{{ t('Explore reports') }} <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="{{ url_for('main.create_report') }}">{{ t('Share your experience') }} <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="trust-row">
+        <div><strong>{{ t('Evidence-first') }}</strong><span>{{ t('Media required') }}</span></div>
+        <div><strong>{{ t('Community-led') }}</strong><span>{{ t('Real local reports') }}</span></div>
+        <div><strong>{{ t('Privacy-aware') }}</strong><span>{{ t('Share responsibly') }}</span></div>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="visual-card visual-card-back">
+        <span class="mini-tag">{{ t('New report') }}</span>
+        <div class="mini-lines"><i></i><i></i><i></i></div>
+      </div>
+      <div class="visual-card visual-card-main">
+        <div class="store-illustration">
+          <div class="store-sun"></div>
+          <div class="store-building">
+            <div class="awning"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="store-sign">STORE</div>
+            <div class="store-door"></div><div class="store-window"></div>
+          </div>
+        </div>
+        <div class="visual-content">
+          <div><span class="status-dot"></span><small>{{ t('Community report') }}</small></div>
+          <strong>{{ t('Look closer. Choose better.') }}</strong>
+        </div>
+      </div>
+      <div class="proof-badge"><span>✓</span><div><strong>{{ t('Proof attached') }}</strong><small>{{ t('Image or video') }}</small></div></div>
+      <div class="map-pin"><span></span></div>
+    </div>
+  </div>
+</section>
+
+<section id="reports" class="reports-section">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow eyebrow-dark"><span></span> {{ t('Browse the community record') }}</div>
+        <h2>{{ t('Reports near you') }}</h2>
+        <p>{{ t('Search by a shop name, address, hashtag, or what happened.') }}</p>
+      </div>
+      {% if current_user.is_authenticated %}
+        <a class="button button-outline" href="{{ url_for('main.create_report') }}">{{ t('+ Add a report') }}</a>
+      {% endif %}
+    </div>
+
+    <form class="search-panel" action="{{ url_for('main.home') }}#reports" method="get" data-nearby-form>
+      <label class="search-field">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <span class="sr-only">{{ t('Search reports') }}</span>
+        <input name="q" value="{{ q }}" placeholder="{{ t('Search shop, address, hashtag, or concern…') }}" maxlength="120">
+      </label>
+      <input type="hidden" name="lat" data-latitude>
+      <input type="hidden" name="lng" data-longitude>
+      <label class="radius-field">
+        <span>{{ t('Within') }}</span>
+        <select name="radius" aria-label="Nearby radius">
+          {% for value in [2, 5, 10, 25, 50, 100] %}
+            <option value="{{ value }}" {% if radius == value %}selected{% endif %}>{{ value }} km</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="button button-dark search-submit" type="submit">{{ t('Search') }}</button>
+      <button class="nearby-button" type="button" data-use-location>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2V0M12 24v-2M2 12H0M24 12h-2"/></svg>
+        <span>{% if nearby_mode %}{{ t('Update location') }}{% else %}{{ t('Use my location') }}{% endif %}</span>
+      </button>
+    </form>
+    <p class="location-status" data-location-status aria-live="polite">
+      {% if nearby_mode %}{% if locale == 'zh-TW' %}顯示 {{ radius|int }} 公里內的紀錄，依距離排序。{% else %}Showing reports within {{ radius|int }} km, nearest first.{% endif %}{% endif %}
+    </p>
+
+    {% if reports %}
+      <div class="report-grid">
+        {% for report in reports %}
+          <article class="report-card">
+            <a class="report-media" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">
+              {% set cover = report.media[0] %}
+              {% if cover.media_type == 'image' %}
+                <img src="{{ url_for('main.proof_media', media_id=cover.id) }}" alt="Evidence submitted for {{ report.name }}" loading="lazy">
+              {% else %}
+                <video muted preload="metadata"><source src="{{ url_for('main.proof_media', media_id=cover.id) }}#t=0.1" type="{{ cover.mime_type }}"></video>
+                <span class="video-icon">▶</span>
+              {% endif %}
+              <span class="evidence-pill">{% if locale == 'zh-TW' %}{{ report.media|length }} 個證據檔案{% else %}{{ report.media|length }} evidence file{% if report.media|length != 1 %}s{% endif %}{% endif %}</span>
+              {% if report.distance_km is defined %}<span class="distance-pill">{{ '%.1f'|format(report.distance_km) }} km</span>{% endif %}
+            </a>
+            <div class="report-body">
+              <div class="report-meta"><span>{{ t('Community report') }}</span><time datetime="{{ report.created_at|datetime_iso_utc }}" data-local-time data-local-time-precision="date"><span data-local-time-value>{{ report.created_at|format_local_datetime('date') }}</span></time></div>
+              <h3><a href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ report.name }}</a></h3>
+              {% if report.is_online %}
+                <p class="address online-address"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/></svg>{{ t('Online shop') }}</p>
+              {% else %}
+                <p class="address"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>{{ report.localized_address(locale) }}</p>
+              {% endif %}
+              <p class="excerpt">{{ report.controversy|normalize_line_breaks|truncate(145) }}</p>
+              {% if report.hashtags %}
+                <nav class="hashtag-list hashtag-list-card" aria-label="{{ t('Hashtags') }}">
+                  {% for hashtag in report.hashtags %}<a class="hashtag-chip" href="{{ url_for('main.home', q=hashtag) }}#reports">#{{ hashtag }}</a>{% endfor %}
+                </nav>
+              {% endif %}
+              <a class="card-link" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ '查看完整紀錄' if locale == 'zh-TW' else 'Read full report' }} <span>→</span></a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><span>?</span></div>
+        <h3>{{ t('No reports found') }}</h3>
+        <p>{% if q or nearby_mode %}{{ t('Try a broader keyword or a larger search radius.') }}{% else %}{{ t('The community record is ready for its first carefully documented report.') }}{% endif %}</p>
+        {% if q or nearby_mode %}<a href="{{ url_for('main.home') }}#reports" class="button button-outline">{{ t('Clear search') }}</a>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="how-section">
+  <div class="container">
+    <div class="how-heading"><span>{{ t('How it works') }}</span><h2>{{ t('A stronger record starts with care.') }}</h2></div>
+    <div class="steps-grid">
+      <div class="step"><span>01</span><div class="step-icon">⌕</div><h3>{{ t('Search first') }}</h3><p>{{ t('Look for an existing shop report by name, address, or your current location.') }}</p></div>
+      <div class="step"><span>02</span><div class="step-icon">▧</div><h3>{{ t('Document clearly') }}</h3><p>{{ t('Describe what happened and include an image or video that supports the account.') }}</p></div>
+      <div class="step"><span>03</span><div class="step-icon">◎</div><h3>{{ t('Help others decide') }}</h3><p>{{ t('Your careful report becomes part of a searchable community record.') }}</p></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

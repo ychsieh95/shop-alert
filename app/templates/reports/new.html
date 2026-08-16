@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Edit report') if edit_mode else t('Share a report') }} — ShopAlert{% endblock %}
+
+{% block content %}
+{% set current_online = (request.form.get('is_online') == '1') if request.method == 'POST' else (report.is_online if report else false) %}
+{% set saved_controversy_links = report.controversy_links|join('\n') if report else '' %}
+{% set saved_hashtags = report.hashtags|join(' ') if report else '' %}
+<section class="form-page">
+  <div class="container form-layout">
+    <aside class="form-intro">
+      <div class="eyebrow eyebrow-dark"><span></span> {{ t('Update your report') if edit_mode else t('Create a community record') }}</div>
+      <h1>{% if edit_mode %}{{ t('Keep the record') }}<br><em>{{ t('accurate.') }}</em>{% else %}{{ t('Share what') }}<br><em>{{ t('you observed.') }}</em>{% endif %}</h1>
+      <p>{{ t('Review the details and evidence before saving your changes.') if edit_mode else t('Clear details and direct evidence make a report more useful to everyone.') }}</p>
+      <div class="care-card">
+        <div class="care-icon">i</div>
+        <div><strong>{{ t('Report with care') }}</strong><p>{{ t('Stick to what you personally know. Do not include private personal information, threats, or speculation.') }}</p></div>
+      </div>
+      <ol class="form-progress" data-form-progress>
+        <li class="active" data-form-progress-step="1" aria-current="step"><span>1</span><div><strong>{{ t('Shop details') }}</strong><small>{{ t('Name and location') }}</small></div></li>
+        <li data-form-progress-step="2"><span>2</span><div><strong>{{ t('Your report') }}</strong><small>{{ t('What happened') }}</small></div></li>
+        <li data-form-progress-step="3"><span>3</span><div><strong>{{ t('Supporting proof') }}</strong><small>{{ t('Image or video') }}</small></div></li>
+      </ol>
+    </aside>
+
+    <form method="post" enctype="multipart/form-data" class="report-form" data-report-form>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="latitude" value="{{ request.form.get('latitude', report.latitude if report and report.latitude is not none else '') }}" data-place-lat>
+      <input type="hidden" name="longitude" value="{{ request.form.get('longitude', report.longitude if report and report.longitude is not none else '') }}" data-place-lng>
+      <input type="hidden" name="google_place_id" value="{{ request.form.get('google_place_id', report.google_place_id if report and report.google_place_id else '') }}" data-place-id>
+      <input type="hidden" name="address_en_us" value="{{ request.form.get('address_en_us', report.address_en_us if report and report.address_en_us else '') }}" data-place-address-en-us>
+      <input type="hidden" name="address_zh_tw" value="{{ request.form.get('address_zh_tw', report.address_zh_tw if report and report.address_zh_tw else '') }}" data-place-address-zh-tw>
+
+      <section class="form-section" data-form-step="1">
+        <div class="form-section-heading"><span>01</span><div><h2>{{ t('Which shop?') }}</h2><p>{{ t('Enter the details manually') }}{% if google_maps_api_key %}{{ t(', or find the shop with Google Places') }}{% endif %}{{ t('.') }}</p></div></div>
+        <label class="online-shop-toggle">
+          <input type="checkbox" name="is_online" value="1" data-online-shop {% if current_online %}checked{% endif %}>
+          <span class="online-toggle-control" aria-hidden="true"><i></i></span>
+          <span class="online-toggle-copy"><strong>{{ t('This shop operates online') }}</strong><small>{{ t('No physical address is required. The report will not appear in nearby searches.') }}</small></span>
+        </label>
+        {% if google_maps_api_key %}
+          <div class="place-picker" data-address-dependent {% if current_online %}hidden{% endif %}>
+            <label>{{ t('Find with Google Places') }}</label>
+            <div data-place-autocomplete data-place-language="{{ locale }}" data-place-region="{{ 'tw' if locale == 'zh-TW' else 'us' }}" class="google-place-slot"><span class="loading-line">{{ t('Loading place search…') }}</span></div>
+            <small>{{ t('Selecting a result will fill the editable fields below.') }}</small>
+          </div>
+        {% endif %}
+        <div class="field-grid">
+          <label class="field-full">{{ t('Shop name') }} <span>*</span><input name="name" value="{{ request.form.get('name', report.name if report else '') }}" minlength="2" maxlength="180" required placeholder="{{ t('e.g. North Star Coffee') }}" data-shop-name></label>
+          <label class="field-full" data-address-dependent {% if current_online %}hidden{% endif %}>{{ t('Full address') }} <span>*</span><textarea name="address" rows="2" minlength="5" maxlength="500" {% if not current_online %}required{% endif %} placeholder="{{ t('Street, city, region, postal code') }}" data-shop-address>{{ request.form.get('address', report.localized_address(locale) if report else '') }}</textarea></label>
+        </div>
+        <aside class="similar-report-check" data-similar-report-check data-similar-report-url="{{ url_for('main.similar_reports') }}" data-exclude-guid="{{ report.guid if report else '' }}" data-idle-message="{{ t('Enter a shop name or address to check whether it has already been reported.') }}" data-loading-message="{{ t('Checking existing reports…') }}" data-found-one-message="{{ t('A similar report may already exist. Review it before creating another.') }}" data-found-many-message="{{ t('We found {count} similar reports. Review them before creating another.') }}" data-empty-message="{{ t('No similar reports found. You can continue with this report.') }}" data-error-message="{{ t('Could not check for similar reports right now.') }}" data-online-label="{{ t('Online shop') }}" data-reported-label="{{ t('Reported') }}">
+          <output class="similar-report-icon" data-similar-report-count aria-label="{{ t('Similar report count') }}">0</output>
+          <div>
+            <button class="similar-report-open" type="button" data-similar-report-dialog-open>{{ t('Check for existing reports') }} <span aria-hidden="true">↗</span></button>
+            <p data-similar-report-status aria-live="polite">{{ t('Enter a shop name or address to check whether it has already been reported.') }}</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="form-section" data-form-step="2">
+        <div class="form-section-heading"><span>02</span><div><h2>{{ t('What should people know?') }}</h2><p>{{ t('Describe the incident factually and include useful context.') }}</p></div></div>
+        <label>{{ t('Report details') }} <span>*</span>
+          <textarea name="controversy" rows="7" minlength="20" maxlength="5000" required placeholder="{{ t('What happened? When did it happen? What did you directly observe?') }}" data-counted>{{ request.form.get('controversy', report.controversy if report else '') }}</textarea>
+          <small class="field-help"><span>{{ t('Minimum 20 characters') }}</span><span data-char-count>0 / 5,000</span></small>
+        </label>
+        <label>{{ t('Hashtags') }} <small>{{ t('Optional') }}</small>
+          <div class="hashtag-editor" data-hashtag-editor data-hashtag-limit="10" data-hashtag-invalid="{{ t('Use 1 to 30 letters, numbers, or underscores per hashtag.') }}" data-hashtag-limit-message="{{ t('Add no more than 10 hashtags.') }}" data-hashtag-remove-label="{{ t('Remove hashtag') }}">
+            <div class="hashtag-editor-chips" data-hashtag-chips></div>
+            <input type="text" name="hashtags" value="{{ request.form.get('hashtags', saved_hashtags) }}" maxlength="320" autocomplete="off" spellcheck="false" placeholder="{{ t('e.g. #pricing #refund') }}" aria-describedby="hashtag-help hashtag-status" data-hashtag-input>
+            <input type="hidden" data-hashtag-value>
+          </div>
+          <small class="field-help" id="hashtag-help"><span>{{ t('Type a hashtag and press Enter. Add up to 10; the # symbol is optional.') }}</span></small>
+          <small class="hashtag-editor-status" id="hashtag-status" data-hashtag-status aria-live="polite"></small>
+          <div class="hashtag-suggestion-groups">
+            {% if popular_hashtags %}
+              <div class="hashtag-suggestion-group">
+                <span>{{ t('Popular hashtags') }}</span>
+                <div>
+                  {% for hashtag in popular_hashtags %}<button type="button" data-hashtag-suggestion="{{ hashtag }}">#{{ hashtag }}</button>{% endfor %}
+                </div>
+              </div>
+            {% endif %}
+            {% if suggested_hashtags %}
+              <div class="hashtag-suggestion-group">
+                <span>{{ t('Suggested hashtags') }}</span>
+                <div>
+                  {% for hashtag in suggested_hashtags %}<button type="button" data-hashtag-suggestion="{{ hashtag }}">#{{ hashtag }}</button>{% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </label>
+        <label>{{ t('Controversy links') }} <small>{{ t('Optional') }}</small>
+          <textarea name="controversy_links" rows="4" maxlength="20489" inputmode="url" placeholder="https://example.com/source&#10;https://example.com/another-source">{{ request.form.get('controversy_links', saved_controversy_links) }}</textarea>
+          <small class="field-help"><span>{{ t('Add up to 10 public source URLs, one per line.') }}</span></small>
+        </label>
+      </section>
+
+      <section class="form-section" data-form-step="3">
+        <div class="form-section-heading"><span>03</span><div><h2>{{ t('Add supporting proof') }}</h2><p>{{ t('At least one image or video is required.') }}</p></div></div>
+        {% if edit_mode and report.media %}
+          <div class="existing-media-list">
+            <strong class="existing-media-title">{{ t('Current evidence') }}</strong>
+            <div class="existing-media-grid">
+              {% for media in report.media %}
+                <div class="existing-media-item">
+                  <span class="existing-media-preview">
+                    {% if media.media_type == 'image' %}
+                      <img src="{{ url_for('main.proof_media', media_id=media.id) }}" alt="">
+                    {% else %}
+                      <video src="{{ url_for('main.proof_media', media_id=media.id) }}" muted preload="metadata" playsinline></video>
+                      <i aria-hidden="true">▶</i>
+                    {% endif %}
+                  </span>
+                  <div class="existing-media-meta">
+                    <label class="media-name-field"><span>{{ t('Media filename') }}</span><input type="text" name="media_name_{{ media.id }}" value="{{ request.form.get('media_name_' ~ media.id, media.original_name) }}" maxlength="255" required></label>
+                    <label class="remove-media-choice"><input type="checkbox" name="remove_media" value="{{ media.id }}" {% if request.method == 'POST' and media.id|string in request.form.getlist('remove_media') %}checked{% endif %}> {{ t('Remove') }}</label>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        <label class="upload-zone" data-upload-zone>
+          <input type="file" name="proof" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" multiple {% if not edit_mode %}required{% endif %} data-proof-input>
+          <span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5"/></svg></span>
+          <strong>{{ t('Add more proof, or') if edit_mode else t('Drop proof here, or') }} <u>{{ t('choose files') }}</u></strong>
+          <small>JPG, PNG, GIF, WebP, MP4, WebM or MOV · {{ t('50 MB total') }}</small>
+        </label>
+        <div class="upload-previews" data-upload-previews></div>
+      </section>
+
+      <section class="form-section">
+        <div class="form-section-heading"><span>04</span><div><h2>{{ t('Social links') }} <small>{{ t('Optional') }}</small></h2><p>{{ t('Add official shop profiles to help identify the correct business.') }}</p></div></div>
+        <div class="social-grid">
+          {% for field, label in social_fields.items() %}
+            <label>{{ t(label) }}<div class="url-field"><span>↗</span><input type="url" name="{{ field }}" value="{{ request.form.get(field, report.social_links.get(field, '') if report else '') }}" placeholder="https://"></div></label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <label class="attestation"><input type="checkbox" required><span>{{ t('I confirm this report is shared in good faith and does not knowingly contain false claims or private personal information.') }}</span></label>
+      <div class="form-actions">
+        <a href="{{ url_for('main.report_detail', report_guid=report.guid) if edit_mode else url_for('main.home') }}" class="text-link">{{ t('Cancel') }}</a>
+        <button type="submit" class="button button-coral">{{ t('Save changes') if edit_mode else t('Publish report') }} <span>→</span></button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<dialog class="similar-report-dialog" data-similar-report-dialog aria-labelledby="similar-report-dialog-title">
+  <div class="similar-report-dialog-frame">
+    <button type="button" class="dialog-close" data-similar-report-dialog-close aria-label="{{ t('Close similar reports') }}">×</button>
+    <div class="similar-report-dialog-heading">
+      <span class="similar-report-dialog-icon" aria-hidden="true">?</span>
+      <div><h2 id="similar-report-dialog-title">{{ t('Check for existing reports') }}</h2><p>{{ t('Preview possible matches without leaving your report draft.') }}</p></div>
+    </div>
+    <div data-similar-report-list>
+      <p class="similar-report-dialog-status" data-similar-report-dialog-status aria-live="polite">{{ t('Enter a shop name or address to check whether it has already been reported.') }}</p>
+      <div class="similar-report-results" data-similar-report-results></div>
+    </div>
+    <div class="similar-report-viewer" data-similar-report-viewer hidden>
+      <button type="button" class="similar-report-back" data-similar-report-back>← {{ t('Back to similar reports') }}</button>
+      <iframe data-similar-report-frame title="{{ t('Existing report preview') }}" sandbox="allow-forms allow-same-origin allow-scripts"></iframe>
+    </div>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+  {% if google_maps_api_key %}
+  <script>
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await(a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:"{{ google_maps_api_key }}",v:"weekly",language:"{{ locale }}",region:"{{ 'TW' if locale == 'zh-TW' else 'US' }}"});
+    window.shopAlertPlacesEnabled = true;
+  </script>
+  {% endif %}
+{% endblock %}

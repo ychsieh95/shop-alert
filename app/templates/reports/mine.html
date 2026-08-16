@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ t('My reports') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero my-reports-hero">
+  <div class="container info-hero-inner">
+    <div>
+      <div class="eyebrow"><span></span> {{ t('Manage reports') }}</div>
+      <h1>{{ t('Reports you created') }}</h1>
+      <p>{{ t('Review and update every shop report you have shared.') }}</p>
+    </div>
+    <a class="button button-coral" href="{{ url_for('main.create_report') }}">+ {{ t('Share a report') }}</a>
+  </div>
+</section>
+
+<section class="info-page">
+  <div class="container">
+    {% if reports %}
+      <div class="my-report-list">
+        {% for report in reports %}
+          <article class="my-report-card">
+            <a class="my-report-cover" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">
+              {% set cover = report.media[0] %}
+              {% if cover.media_type == 'image' %}
+                <img src="{{ url_for('main.proof_media', media_id=cover.id) }}" alt="" loading="lazy">
+              {% else %}
+                <video src="{{ url_for('main.proof_media', media_id=cover.id) }}#t=0.1" muted preload="metadata" playsinline></video>
+                <span class="video-icon">▶</span>
+              {% endif %}
+            </a>
+            <div class="my-report-copy">
+              <div class="report-meta"><span>{{ t('Archived') if report.archived_at else t('Community report') }}</span></div>
+              <h2><a href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ report.name }}</a></h2>
+              <p class="address">
+                {% if report.is_online %}
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/></svg>{{ t('Online shop') }}
+                {% else %}
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>{{ report.localized_address(locale) }}
+                {% endif %}
+              </p>
+              <p>{{ report.controversy|normalize_line_breaks|truncate(180) }}</p>
+            </div>
+            <div class="my-report-side">
+              {% if report.has_been_updated %}
+                <time class="my-report-date" datetime="{{ report.updated_at|datetime_iso_utc }}" data-local-time data-local-time-precision="date">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66L20 8"/><path d="M20 3v5h-5"/></svg>
+                  <span><small>{{ t('Last updated') }}</small><strong data-local-time-value>{{ report.updated_at|format_local_datetime('date') }}</strong></span>
+                </time>
+              {% endif %}
+              <div class="my-report-actions">
+                <a class="button button-outline" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ t('View report') }}</a>
+                {% if not report.archived_at %}<a class="button button-coral" href="{{ url_for('main.edit_report', report_guid=report.guid) }}">{{ t('Edit') }}</a>{% endif %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon"><span>?</span></div>
+        <h2>{{ t('You have not created any reports yet.') }}</h2>
+        <a class="button button-coral" href="{{ url_for('main.create_report') }}">{{ t('Create your first report') }}</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

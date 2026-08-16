@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Page not found') }} — ShopAlert{% endblock %}
+{% block content %}<section class="error-page"><div><span>404</span><h1>{{ t('This page is out of view.') }}</h1><p>{{ t('The page may have moved or never existed.') }}</p><a class="button button-coral" href="{{ url_for('main.home') }}">{{ t('Return home') }}</a></div></section>{% endblock %}

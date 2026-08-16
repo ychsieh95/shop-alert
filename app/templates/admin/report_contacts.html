@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Report contacts') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero admin-contact-hero">
+  <div class="container info-hero-inner">
+    <div>
+      <div class="eyebrow"><span></span> {{ t('Administrator review') }}</div>
+      <h1>{{ t('Messages about reported items') }}</h1>
+      <p>{{ t('Review concerns submitted by signed-in community members.') }}</p>
+    </div>
+    <a class="button button-coral" href="{{ url_for('main.admin_dashboard') }}">{{ t('Admin') }}</a>
+  </div>
+</section>
+
+<section class="info-page">
+  <div class="container admin-contact-container">
+    {% if contacts %}
+      <div class="admin-contact-list">
+        {% for contact in contacts %}
+          <article class="admin-contact-card {% if contact.is_resolved %}is-resolved{% endif %}">
+            <header>
+              <div>
+                <span class="contact-status">{{ t('Resolved') if contact.is_resolved else t('Open') }}</span>
+                <h2>{{ t(contact_reasons[contact.reason]) }}</h2>
+              </div>
+              <time datetime="{{ contact.created_at|datetime_iso_utc }}" data-local-time><small>{{ t('Received') }}</small><span data-local-time-value>{{ contact.created_at|format_local_datetime }}</span> <span data-local-timezone>{{ timezone_name }}</span></time>
+            </header>
+            <dl>
+              <div><dt>{{ t('From') }}</dt><dd>{{ contact.sender.display_name }} · {{ contact.reply_email }}</dd></div>
+              <div><dt>{{ t('Related report') }}</dt><dd><a href="{{ url_for('main.report_detail', report_guid=contact.report.guid) }}">{{ contact.report.name }} ↗</a></dd></div>
+            </dl>
+            <p class="admin-contact-message">{{ contact.details }}</p>
+            <footer>
+              <a class="button button-outline" href="mailto:{{ contact.reply_email }}?subject={{ ('ShopAlert: ' ~ contact.report.name)|urlencode }}">{{ t('Reply by email') }}</a>
+              <form method="post" action="{{ url_for('main.resolve_report_contact', contact_guid=contact.guid) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button button-dark" type="submit">{{ t('Reopen') if contact.is_resolved else t('Mark resolved') }}</button>
+              </form>
+            </footer>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state"><div class="empty-icon"><span>✓</span></div><h2>{{ t('No contact messages yet.') }}</h2></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

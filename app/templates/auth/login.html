@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Log in') }} — ShopAlert{% endblock %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-accent"></div>
+  <div class="auth-card">
+    <div class="auth-heading">
+      <div class="auth-symbol">◎</div>
+      <p class="eyebrow eyebrow-dark"><span></span> {{ t('Welcome back') }}</p>
+      <h1>{{ t('Log in to ShopAlert') }}</h1>
+      <p>{{ t('Continue documenting a clearer community record.') }}</p>
+    </div>
+    <form method="post" class="stacked-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>{{ t('Email or username') }}<input type="text" name="identifier" value="{{ request.form.get('identifier', request.form.get('email', '')) }}" autocomplete="username" required autofocus placeholder="{{ t('Email or username') }}"></label>
+      <label>{{ t('Password') }}<input type="password" name="password" autocomplete="current-password" required placeholder="{{ t('Your password') }}"></label>
+      <label class="check-row"><input type="checkbox" name="remember"><span>{{ t('Keep me logged in') }}</span></label>
+      {% if turnstile_enabled %}
+      <div class="turnstile-wrap">
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="login" data-theme="auto" data-size="flexible" data-language="{{ locale }}"></div>
+      </div>
+      {% endif %}
+      <button class="button button-coral button-full" type="submit">{{ t('Log in') }} <span>→</span></button>
+    </form>
+    <p class="auth-switch">{{ t('New here?') }} <a href="{{ url_for('auth.signup') }}">{{ t('Create an account') }}</a></p>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+{% if turnstile_enabled %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
+{% endblock %}

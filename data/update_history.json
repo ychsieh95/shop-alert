@@ -1,0 +1,222 @@
+[
+  {
+    "date": "2026-08-16",
+    "date_label": {
+      "en-US": "August 16, 2026",
+      "zh-TW": "2026 年 8 月 16 日"
+    },
+    "title": {
+      "en-US": "Open-source licensing and safer administrator controls",
+      "zh-TW": "開源授權與更安全的管理員控制項"
+    },
+    "summary": {
+      "en-US": "ShopAlert now publishes its source code under the MIT License, lets a deployment manage the administrator account from environment variables, and makes destructive account controls clearer in the dashboard.",
+      "zh-TW": "ShopAlert 現在以 MIT 授權條款公開原始碼，可透過環境變數管理管理員帳號，並讓後台的破壞性帳號操作更清楚易辨。"
+    },
+    "items": {
+      "en-US": [
+        "Released the ShopAlert source code under the MIT License and updated the licenses page to reference the new LICENSE file instead of stating that no project license exists.",
+        "Added an optional ADMIN_PASSWORD setting that creates the administrator account at startup when it is missing and keeps its password in sync with the configured value.",
+        "Added an optional ADMIN_USERNAME setting that fixes the administrator's login username, so the account can sign in with either that username or the configured email address.",
+        "Stopped offering the ban control on the administrator's own dashboard card, showing a disabled button and the reason instead of rejecting the action only after it is submitted.",
+        "Restyled the ban action with the same destructive-action color already used for report deletion, while leaving ban removal in the neutral style.",
+        "Excluded local operational files, deployment scripts, and database backups from the Docker build context so they cannot reach a published image."
+      ],
+      "zh-TW": [
+        "以 MIT 授權條款發布 ShopAlert 原始碼，並更新授權頁面改為指向新的 LICENSE 檔案，不再說明專案未包含授權條款。",
+        "新增選用的 ADMIN_PASSWORD 設定，啟動時若管理員帳號不存在會自動建立，並讓其密碼與設定值保持一致。",
+        "新增選用的 ADMIN_USERNAME 設定，可固定管理員的登入使用者名稱，讓該帳號能以該使用者名稱或設定的 Email 登入。",
+        "管理後台不再於管理員自身的帳號卡片提供停權操作，改為顯示停用的按鈕與原因，而非在送出後才拒絕該操作。",
+        "停權操作改用與刪除紀錄相同的破壞性操作配色，解除停權則維持中性樣式。",
+        "將本機維運檔案、部署指令稿與資料庫備份排除於 Docker 建置內容之外，確保不會進入已發布的映像檔。"
+      ]
+    }
+  },
+  {
+    "date": "2026-08-16",
+    "date_label": {
+      "en-US": "August 16, 2026",
+      "zh-TW": "2026 年 8 月 16 日"
+    },
+    "title": {
+      "en-US": "A clearer report-creation workflow",
+      "zh-TW": "更清楚的紀錄建立流程"
+    },
+    "summary": {
+      "en-US": "Creating a report now keeps every proof selection, previews media before publishing, and clearly tracks the current form section while scrolling.",
+      "zh-TW": "建立紀錄時現在會保留每次選取的證據、在發布前預覽媒體，並於捲動時清楚標示目前的表單區段。"
+    },
+    "items": {
+      "en-US": [
+        "Changed the supporting-proof picker so files selected or dropped in multiple actions are appended instead of replacing earlier selections.",
+        "Added responsive image and video thumbnail cards beneath the proof picker, including filenames, file sizes, editable display names, and a video play indicator.",
+        "Made the report-form progress indicator follow the current shop-details, report-details, or supporting-proof section as the page scrolls."
+      ],
+      "zh-TW": [
+        "調整支持證據選取器，透過多次操作選取或拖放的檔案現在會持續加入，不再取代先前選取的檔案。",
+        "在證據選取器下方新增響應式圖片與影片縮圖卡片，顯示檔名、檔案大小、可編輯顯示名稱及影片播放標記。",
+        "紀錄表單的進度指示器現在會隨頁面捲動，跟隨目前的店家資訊、紀錄內容或支持證據區段。"
+      ]
+    }
+  },
+  {
+    "date": "2026-08-14",
+    "date_label": {
+      "en-US": "August 14, 2026",
+      "zh-TW": "2026 年 8 月 14 日"
+    },
+    "title": {
+      "en-US": "Searchable hashtags and privacy transparency",
+      "zh-TW": "可搜尋主題標籤與隱私透明度"
+    },
+    "summary": {
+      "en-US": "Reports now support searchable hashtags, while ShopAlert clearly explains its data practices and the privacy implications of public reports and optional external services.",
+      "zh-TW": "紀錄現在支援可搜尋的主題標籤，ShopAlert 也清楚說明資料處理方式，以及公開紀錄與選用外部服務的隱私影響。"
+    },
+    "items": {
+      "en-US": [
+        "Added account profiles with profile-picture management, verified password changes, and a consolidated view of the user’s own reports.",
+        "Added unique login usernames that can be chosen at sign-up, changed from the profile, and used instead of an email address when logging in.",
+        "Expanded the administrator role with report archive/restore and permanent deletion, user ban/restore controls, and administrator password resets.",
+        "Added optional hashtags to report creation and editing, with Enter-to-label input, language-aware suggestions, popular hashtag shortcuts, validation, clickable display chips, and keyword search.",
+        "Added an IP-country language default for visitors without a saved preference and localized report timestamps using the visitor's timezone.",
+        "Moved preferences from the header to the profile and footer, with separate selectors for language, appearance, and color.",
+        "Published a bilingual introduction page explaining ShopAlert’s purpose, reporting workflow, and responsible-use boundaries.",
+        "Added a live similar-report check that compares shop names, addresses, Google Place IDs, and coordinates, with matched reports previewed in an in-page dialog that preserves the draft.",
+        "Last-updated timestamps now stay hidden until a report has actually been edited.",
+        "Published a bilingual privacy policy covering accounts, public submissions, evidence media, administrator contacts, location search, cookies, browser storage, external services, retention, security, and user choices.",
+        "Added direct privacy-policy access from the site footer and contact information for privacy and data requests.",
+        "Created a ShopAlert storefront-and-alert website icon with SVG, ICO, Apple touch, and installable app-icon formats."
+      ],
+      "zh-TW": [
+        "新增帳號個人檔案，可管理個人圖片、驗證目前密碼後變更密碼，並集中查看使用者自己的紀錄。",
+        "新增唯一登入使用者名稱，可在註冊時設定、從個人檔案變更，並可取代 Email 用於登入。",
+        "擴充管理員權限，新增紀錄封存／恢復與永久刪除、使用者停權／恢復，以及管理員重設密碼功能。",
+        "紀錄建立與編輯新增選用主題標籤，輸入後按 Enter 即轉為標籤，並提供依介面語言顯示的建議標籤、熱門標籤捷徑、輸入驗證、可點選的標籤顯示及關鍵字搜尋。",
+        "尚未儲存語言偏好的訪客現在會依 IP 國家套用預設語言，紀錄時間也會依訪客時區顯示。",
+        "將偏好設定從頁首移至個人檔案與頁尾，並分開提供語言、外觀及色彩選單。",
+        "發布雙語網站介紹頁，說明 ShopAlert 的目的、紀錄流程及負責任使用界線。",
+        "新增即時相似紀錄檢查，在提交前比對店名、地址、Google Place ID 與座標，並於保留草稿的頁內對話框預覽相符紀錄。",
+        "紀錄尚未實際編輯前不再顯示最後更新時間。",
+        "發布雙語隱私權政策，涵蓋帳號、公開提交內容、證據媒體、管理員聯絡、位置搜尋、Cookie、瀏覽器儲存、外部服務、資料保存、安全措施及使用者選擇。",
+        "在網站頁尾新增隱私權政策入口，並提供隱私問題與資料請求的聯絡方式。",
+        "建立結合店面與警示意象的 ShopAlert 網站圖示，提供 SVG、ICO、Apple Touch 及可安裝應用程式圖示格式。"
+      ]
+    }
+  },
+  {
+    "date": "2026-08-13",
+    "date_label": {
+      "en-US": "August 13, 2026",
+      "zh-TW": "2026 年 8 月 13 日"
+    },
+    "title": {
+      "en-US": "Online shops, preferences, and project information",
+      "zh-TW": "網路商店、偏好設定與專案資訊"
+    },
+    "summary": {
+      "en-US": "Reports now support online-only shops, while visitors can tailor the interface and review how ShopAlert evolves.",
+      "zh-TW": "紀錄現在支援純網路商店，訪客也可以調整介面偏好並了解 ShopAlert 的更新歷程。"
+    },
+    "items": {
+      "en-US": [
+        "Added editable display filenames for newly selected and existing evidence media while retaining randomized server storage names.",
+        "Added a live current/total media index to report evidence galleries.",
+        "Localized Google Place Autocomplete and stored both English and Traditional Chinese formatted addresses so existing report views switch with the interface language.",
+        "Added up to 10 validated controversy/source URLs with Cloudflare URL Scanner checks, fail-closed malicious-link blocking, a cached server-generated screenshot, and confirmation on detail pages.",
+        "Added persistent failed-login limits with configurable retry windows, timed lockouts, and Retry-After responses.",
+        "Added optional Cloudflare Turnstile verification to login and sign-up, including server-side action and hostname checks.",
+        "Added a report-specific administrator contact window and a protected inbox for reviewing and resolving submitted concerns.",
+        "Changed evidence images to open in an accessible in-page preview instead of a new browser tab.",
+        "Added persistent last-updated timestamps to report details and redesigned date placement on desktop management cards.",
+        "Added a private My reports page and owner-only editing for report details, social links, and supporting evidence.",
+        "Reworked report evidence into a contained stage with image and video thumbnails that remains usable on narrow screens.",
+        "Assigned every report a stable GUID for public URLs while preserving redirects from legacy numeric links.",
+        "Added an online-shop option that removes the physical-address requirement and excludes the report from nearby searches.",
+        "Added complete English and Traditional Chinese interfaces with a persistent language selector.",
+        "Added light and dark themes plus a system mode that follows operating-system appearance changes.",
+        "Published a bilingual update timeline and a dedicated license and attribution page.",
+        "Kept preference controls accessible and responsive across desktop and mobile navigation."
+      ],
+      "zh-TW": [
+        "新增重新命名新選取及既有證據媒體顯示檔名的功能，伺服器端仍保留隨機儲存名稱。",
+        "紀錄證據相簿新增目前項目／總數的即時媒體索引。",
+        "Google 地點自動完成現在會同時儲存英文與繁體中文格式化地址，既有紀錄畫面會隨介面語言切換地址。",
+        "紀錄建立與編輯現在支援最多 10 個經驗證的爭議／來源網址，並加入 Cloudflare URL Scanner 檢查、惡意連結 Fail Closed 阻擋、伺服器快取截圖及詳細頁確認選項。",
+        "新增持久保存的登入失敗限制，可設定重試計算期間與定時鎖定，並提供 Retry-After 回應。",
+        "登入與註冊新增選用的 Cloudflare Turnstile 驗證，包含伺服器端 action 與主機名稱檢查。",
+        "新增針對個別紀錄聯絡管理員的視窗，以及可審查並處理提交疑慮的受保護收件匣。",
+        "將證據圖片改為在頁面內的無障礙預覽視窗開啟，不再另開瀏覽器分頁。",
+        "在紀錄詳細頁新增持續保存的最後更新時間，並重新設計桌面版管理卡片的日期位置。",
+        "新增私人的「我的紀錄」頁面，以及僅限擁有者編輯紀錄內容、社群連結與支持證據的功能。",
+        "將紀錄證據更新為包含圖片與影片縮圖的固定展示區，在窄螢幕上也能順暢使用。",
+        "為每筆紀錄配置穩定的 GUID 公開網址，同時保留舊有數字連結的重新導向。",
+        "新增網路商店選項，不需要實體地址，且該紀錄不會出現在附近搜尋結果中。",
+        "新增完整的英文與繁體中文介面，並提供可持續使用的語言選擇器。",
+        "新增淺色、深色及跟隨作業系統外觀變化的系統模式。",
+        "發布雙語更新時間軸，以及獨立的授權與來源標示頁面。",
+        "偏好設定控制項在桌面與行動版導覽中皆支援無障礙與響應式操作。"
+      ]
+    }
+  },
+  {
+    "date": "2026-08-13",
+    "date_label": {
+      "en-US": "August 13, 2026",
+      "zh-TW": "2026 年 8 月 13 日"
+    },
+    "title": {
+      "en-US": "Evidence-led shop reports",
+      "zh-TW": "以證據為基礎的店家紀錄"
+    },
+    "summary": {
+      "en-US": "ShopAlert launched with the core tools needed to document and discover community concerns about shops.",
+      "zh-TW": "ShopAlert 推出記錄與探索店家社群疑慮所需的核心工具。"
+    },
+    "items": {
+      "en-US": [
+        "Added secure account registration, sign-in, remembered sessions, and sign-out.",
+        "Required at least one supporting image or video for every published shop report.",
+        "Added shop details, controversy descriptions, official social links, and optional Google Place Autocomplete.",
+        "Added keyword search and nearby filtering using browser geolocation and selectable distance ranges.",
+        "Added responsive report cards, evidence galleries, allegation notices, and responsible-reporting guidance."
+      ],
+      "zh-TW": [
+        "新增安全的帳號註冊、登入、記住登入狀態及登出功能。",
+        "每筆發布的店家紀錄都必須包含至少一張支持圖片或一部影片。",
+        "新增店家資訊、爭議說明、官方社群連結，以及選用的 Google 地點自動完成。",
+        "新增關鍵字搜尋，以及使用瀏覽器定位與可選距離範圍的附近篩選。",
+        "新增響應式紀錄卡片、證據相簿、指控提醒及負責任分享指引。"
+      ]
+    }
+  },
+  {
+    "date": "2026-08-13",
+    "date_label": {
+      "en-US": "August 13, 2026",
+      "zh-TW": "2026 年 8 月 13 日"
+    },
+    "title": {
+      "en-US": "A secure Flask foundation",
+      "zh-TW": "安全的 Flask 基礎"
+    },
+    "summary": {
+      "en-US": "The first release established a small, maintainable application that runs locally with SQLite by default.",
+      "zh-TW": "首個版本建立了精簡且易於維護的應用程式，預設可直接使用本機 SQLite 執行。"
+    },
+    "items": {
+      "en-US": [
+        "Built the application with Flask, SQLAlchemy, server-rendered Jinja templates, and vanilla JavaScript.",
+        "Added password hashing, CSRF protection, safe redirects, randomized upload names, and upload validation.",
+        "Made SQLite the zero-configuration default while retaining support for another SQLAlchemy database URL.",
+        "Added automated coverage for authentication, access control, reporting, media delivery, and search."
+      ],
+      "zh-TW": [
+        "使用 Flask、SQLAlchemy、伺服器端 Jinja 樣板及原生 JavaScript 建立應用程式。",
+        "新增密碼雜湊、CSRF 防護、安全轉址、隨機上傳檔名及上傳驗證。",
+        "將 SQLite 設為免設定的預設資料庫，同時保留其他 SQLAlchemy 資料庫網址的支援。",
+        "新增帳號驗證、權限控管、紀錄建立、媒體傳送及搜尋的自動化測試。"
+      ]
+    }
+  }
+]

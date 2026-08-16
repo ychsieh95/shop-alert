@@ -1,0 +1,33 @@
+<form action="{{ url_for('main.set_language') }}" method="post" class="preference-form combined-preference-form" data-preserve-scroll>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+  <input type="hidden" name="locale" value="{{ locale }}" data-preference-locale>
+  <div class="preference-fields">
+    <label class="preference-control language-control">
+      <span class="preference-icon" aria-hidden="true">文</span>
+      <span class="sr-only">{{ t('Language') }}</span>
+      <select data-language-select aria-label="{{ t('Language') }}">
+        <option value="en-US">EN</option>
+        <option value="zh-TW">繁中</option>
+      </select>
+    </label>
+    <label class="preference-control appearance-control">
+      <span class="preference-icon" aria-hidden="true">◐</span>
+      <span class="sr-only">{{ t('Appearance') }}</span>
+      <select data-theme-select aria-label="{{ t('Appearance') }}">
+        <option value="system">{{ t('System') }}</option>
+        <option value="light" selected>{{ t('Light') }}</option>
+        <option value="dark">{{ t('Dark') }}</option>
+      </select>
+    </label>
+    <label class="preference-control color-control">
+      <span class="preference-icon" aria-hidden="true">●</span>
+      <span class="sr-only">{{ t('Theme color') }}</span>
+      <select data-color-theme-select aria-label="{{ t('Theme color') }}">
+        <option value="coral">{{ t('Coral') }}</option>
+        <option value="yellow">{{ t('Yellow') }}</option>
+        <option value="purple">{{ t('Purple') }}</option>
+      </select>
+    </label>
+  </div>
+</form>

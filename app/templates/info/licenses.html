@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Licenses') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero licenses-info-hero">
+  <div class="container info-hero-inner">
+    <div>
+      <div class="eyebrow"><span></span> {{ t('Credits and terms') }}</div>
+      <h1>{{ t('Licenses and acknowledgments') }}</h1>
+      <p>{{ t('Third-party assets, open-source software, optional services, and development acknowledgments used by ShopAlert.') }}</p>
+    </div>
+    <div class="info-hero-mark" aria-hidden="true">
+      <svg viewBox="0 0 120 120"><path d="M36 18h38l18 18v66H36z"/><path d="M74 18v20h18M49 58h30M49 72h30M49 86h20"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="info-page">
+  <div class="container licenses-container">
+    <aside class="license-notice">
+      <span aria-hidden="true">i</span>
+      <div><strong>{{ t('Project license status') }}</strong><p>{{ t('ShopAlert’s source code is released under the MIT License; see the LICENSE file in the repository. Third-party assets and services listed below remain subject to their own licenses and terms.') }}</p></div>
+    </aside>
+
+    <div class="license-list">
+      <article class="license-card">
+        <div class="license-preview license-preview-font" aria-hidden="true"><span>Aa 店</span></div>
+        <div class="license-copy">
+          <p class="eyebrow eyebrow-dark"><span></span> {{ t('Web typography') }}</p>
+          <h2>{{ t('DM Sans and Manrope') }}</h2>
+          <p>{{ t('ShopAlert loads DM Sans and Manrope from Google Fonts for interface text and headings. Both font families are distributed under the SIL Open Font License 1.1.') }}</p>
+          <p>{{ t('The fonts are loaded remotely and are not bundled in this repository.') }}</p>
+          <div class="license-links">
+            <a href="https://github.com/google/fonts/tree/main/ofl/dmsans" target="_blank" rel="noopener">{{ t('DM Sans source') }} ↗</a>
+            <a href="https://github.com/google/fonts/tree/main/ofl/manrope" target="_blank" rel="noopener">{{ t('Manrope source') }} ↗</a>
+            <a href="https://openfontlicense.org/open-font-license-official-text/" target="_blank" rel="noopener">{{ t('Open Font License') }} ↗</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="license-card">
+        <div class="license-preview" aria-hidden="true">
+          <svg class="license-symbol" viewBox="0 0 120 120"><path d="M28 38h64v50H28z"/><path d="m42 55-10 8 10 8M78 55l10 8-10 8M68 48 52 78"/><circle cx="39" cy="29" r="5"/><circle cx="55" cy="29" r="5"/></svg>
+        </div>
+        <div class="license-copy">
+          <p class="eyebrow eyebrow-dark"><span></span> {{ t('Open-source software') }}</p>
+          <h2>{{ t('Python dependencies') }}</h2>
+          <p>{{ t('ShopAlert is built with Flask and related open-source packages. Each package remains subject to its own license and copyright notices.') }}</p>
+          <p>{{ t('Core packages include Flask, Flask-Login, Flask-SQLAlchemy, Flask-WTF, SQLAlchemy, WTForms, Werkzeug, Jinja, python-dotenv, and Playwright.') }}</p>
+          <div class="license-links">
+            <a href="https://flask.palletsprojects.com/en/stable/license/" target="_blank" rel="noopener">{{ t('Flask license') }} ↗</a>
+            <a href="https://github.com/maxcountryman/flask-login/blob/main/LICENSE" target="_blank" rel="noopener">{{ t('Flask-Login license') }} ↗</a>
+            <a href="https://github.com/sqlalchemy/sqlalchemy/blob/main/LICENSE" target="_blank" rel="noopener">{{ t('SQLAlchemy license') }} ↗</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="license-card">
+        <div class="license-preview license-preview-map" aria-hidden="true">
+          <svg class="license-symbol" viewBox="0 0 120 120"><path d="m18 29 28-12 28 12 28-12v74L74 103 46 91 18 103z"/><path d="M46 17v74M74 29v74"/><path d="M74 45c0 13-14 25-14 25S46 58 46 45a14 14 0 1 1 28 0Z"/><circle cx="60" cy="45" r="5"/></svg>
+        </div>
+        <div class="license-copy">
+          <p class="eyebrow eyebrow-dark"><span></span> {{ t('Optional external service') }}</p>
+          <h2>{{ t('Google Maps Platform') }}</h2>
+          <p>{{ t('When an API key is configured, ShopAlert uses the Maps JavaScript API and Places API (New) for Place Autocomplete. Manual shop entry works without this service.') }}</p>
+          <p>{{ t('Use of Google Maps Platform is governed by Google’s terms, policies, API-key restrictions, and billing rules; it is not covered by an open-source license from ShopAlert.') }}</p>
+          <div class="license-links">
+            <a href="https://cloud.google.com/maps-platform/terms" target="_blank" rel="noopener">{{ t('Google Maps Platform terms') }} ↗</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="license-card">
+        <div class="license-preview" aria-hidden="true">
+          <svg class="license-symbol" viewBox="0 0 120 120"><path d="M60 14 98 31v25c0 25-15 41-38 51C37 97 22 81 22 56V31z"/><path d="m42 60 12 12 25-27"/></svg>
+        </div>
+        <div class="license-copy">
+          <p class="eyebrow eyebrow-dark"><span></span> {{ t('Optional external service') }}</p>
+          <h2>{{ t('Cloudflare Turnstile and URL Scanner') }}</h2>
+          <p>{{ t('When configured, ShopAlert uses Turnstile to reduce automated account abuse and URL Scanner to check unlisted controversy links before generating previews. Full submitted URLs are sent to Cloudflare.') }}</p>
+          <p>{{ t('Use of Cloudflare services is governed by Cloudflare’s service-specific terms, privacy policy, and data-processing terms; it is not covered by an open-source license from ShopAlert.') }}</p>
+          <div class="license-links">
+            <a href="https://developers.cloudflare.com/radar/investigate/url-scanner/" target="_blank" rel="noopener">{{ t('Cloudflare URL Scanner documentation') }} ↗</a>
+            <a href="https://www.cloudflare.com/service-specific-terms-application-services/" target="_blank" rel="noopener">{{ t('Cloudflare service terms') }} ↗</a>
+            <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">{{ t('Cloudflare privacy policy') }} ↗</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="license-card">
+        <div class="license-preview license-preview-codex" aria-hidden="true">
+          <svg class="license-symbol codex-symbol" viewBox="0 0 120 120"><rect x="19" y="19" width="82" height="82" rx="23"/><path d="m50 43-17 17 17 17M70 43l17 17-17 17M66 34 54 86"/></svg>
+        </div>
+        <div class="license-copy">
+          <p class="eyebrow eyebrow-dark"><span></span> {{ t('Development acknowledgment') }}</p>
+          <h2>{{ t('Developed with support from OpenAI Codex') }}</h2>
+          <p>{{ t('ShopAlert was developed with assistance from Codex, OpenAI’s coding agent, for implementation, review, and testing.') }}</p>
+          <p>{{ t('The project owner remains responsible for this website, its operation, and its content. This acknowledgment does not imply OpenAI endorsement or ownership.') }}</p>
+          <div class="license-links">
+            <a href="https://openai.com/codex/" target="_blank" rel="noopener">{{ t('Official Codex page') }} ↗</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Updates') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero updates-info-hero">
+  <div class="container info-hero-inner">
+    <div>
+      <div class="eyebrow"><span></span> {{ t('Release notes') }}</div>
+      <h1>{{ t('What’s new in ShopAlert') }}</h1>
+      <p>{{ t('A public, bilingual record of meaningful product and security changes.') }}</p>
+    </div>
+    <div class="info-hero-mark info-hero-mark-updates" aria-hidden="true">
+      <svg viewBox="0 0 120 120"><path d="M24 38h72M24 60h52M24 82h38"/><circle cx="91" cy="81" r="14"/><path d="m85 81 4 4 8-10"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="info-page">
+  <div class="container updates-container">
+    <div class="updates-timeline" aria-label="{{ t('Updates') }}">
+      {% for entry in update_entries %}
+        <article class="update-entry">
+          <div class="update-rail" aria-hidden="true"><span></span></div>
+          <div class="update-card">
+            <header class="update-card-header">
+              <time datetime="{{ entry.date }}">{{ entry.date_label }}</time>
+              {% if loop.first %}<span class="update-latest">{{ t('Latest') }}</span>{% endif %}
+            </header>
+            <h2>{{ entry.title }}</h2>
+            <p class="update-summary">{{ entry.summary }}</p>
+            <div class="update-details">
+              <h3>{{ t('Details') }}</h3>
+              <ul>
+                {% for item in entry['items'] %}<li>{{ item }}</li>{% endfor %}
+              </ul>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+

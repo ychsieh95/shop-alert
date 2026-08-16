@@ -1,0 +1,22 @@
+# Environment configuration
+.env
+
+# Python cache and compiled files
+*.py[cod]
+__pycache__/
+
+# Python virtual environments
+.venv/
+venv/
+
+# Test caches
+.pytest_cache/
+
+# Application runtime data
+instance/*
+!instance/uploads
+instance/uploads/*
+!instance/uploads/.gitkeep
+
+# Private local documentation and operational files
+private/

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Create an account') }} — ShopAlert{% endblock %}
+{% block content %}
+<section class="auth-page">
+  <div class="auth-accent"></div>
+  <div class="auth-card">
+    <div class="auth-heading">
+      <div class="auth-symbol">＋</div>
+      <p class="eyebrow eyebrow-dark"><span></span> {{ t('Join the community') }}</p>
+      <h1>{{ t('Create your account') }}</h1>
+      <p>{{ t('Contribute evidence-led reports in just a few minutes.') }}</p>
+    </div>
+    <form method="post" class="stacked-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>{{ t('Display name') }}<input type="text" name="display_name" value="{{ request.form.get('display_name', '') }}" minlength="2" maxlength="80" autocomplete="name" required autofocus placeholder="{{ t('How you’ll appear') }}"></label>
+      <label>{{ t('Username') }}<input type="text" name="username" value="{{ request.form.get('username', '') }}" minlength="3" maxlength="30" autocomplete="username" required pattern="[\p{L}\p{N}][\p{L}\p{N}_]{2,29}" placeholder="{{ t('Your login username') }}"><small>{{ t('Use 3 to 30 letters, numbers, or underscores.') }}</small></label>
+      <label>{{ t('Email address') }}<input type="email" name="email" value="{{ request.form.get('email', '') }}" autocomplete="email" required placeholder="you@example.com"></label>
+      <label>{{ t('Password') }}<input type="password" name="password" minlength="8" autocomplete="new-password" required placeholder="{{ t('At least 8 characters') }}"><small>{{ t('Use at least 8 characters.') }}</small></label>
+      {% if turnstile_enabled %}
+      <div class="turnstile-wrap">
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="signup" data-theme="auto" data-size="flexible" data-language="{{ locale }}"></div>
+      </div>
+      {% endif %}
+      <button class="button button-coral button-full" type="submit">{{ t('Create account') }} <span>→</span></button>
+    </form>
+    <p class="auth-switch">{{ t('Already have an account?') }} <a href="{{ url_for('auth.login') }}">{{ t('Log in') }}</a></p>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+{% if turnstile_enabled %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{% endif %}
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ t('My profile') }} — ShopAlert{% endblock %}
+
+{% macro profile_status(scope) -%}
+  {% set statuses = get_flashed_messages(
+    with_categories=true,
+    category_filter=['profile-' ~ scope ~ '-success', 'profile-' ~ scope ~ '-error']
+  ) %}
+  {% for category, message in statuses %}
+    {% set status_type = 'success' if category.endswith('-success') else 'error' %}
+    <div class="profile-form-status profile-form-status-{{ status_type }}" role="status" aria-live="polite">
+      <span aria-hidden="true">{{ '✓' if status_type == 'success' else '!' }}</span>
+      <p>{{ t(message) }}</p>
+    </div>
+  {% endfor %}
+{%- endmacro %}
+
+{% block content %}
+<section class="info-hero profile-hero">
+  <div class="container info-hero-inner">
+    <div class="profile-identity">
+      {% if current_user.profile_image_name %}
+        <img class="profile-avatar profile-avatar-large" src="{{ url_for('main.profile_picture', user_id=current_user.id) }}" alt="">
+      {% else %}
+        <span class="profile-avatar profile-avatar-large profile-avatar-fallback" aria-hidden="true">{{ current_user.display_name[0]|upper }}</span>
+      {% endif %}
+      <div><div class="eyebrow"><span></span> {{ t('Account settings') }}</div><h1>{{ current_user.display_name }}</h1><p>@{{ current_user.username }} · {{ current_user.email }}</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="info-page profile-page">
+  <div class="container">
+    <div class="profile-settings-grid">
+      <article class="profile-panel" id="profile-username-settings">
+        <span class="profile-panel-number">01</span>
+        <h2>{{ t('Login username') }}</h2>
+        <p>{{ t('Use your username or email address when logging in.') }}</p>
+        <form class="stacked-form" method="post" action="{{ url_for('main.change_username') }}" data-preserve-scroll>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>{{ t('Username') }}<input type="text" name="username" value="{{ current_user.username }}" minlength="3" maxlength="30" autocomplete="username" required pattern="[\p{L}\p{N}][\p{L}\p{N}_]{2,29}"><small>{{ t('Use 3 to 30 letters, numbers, or underscores.') }}</small></label>
+          <button class="button button-coral" type="submit">{{ t('Update username') }}</button>
+        </form>
+        {{ profile_status('username') }}
+      </article>
+
+      <article class="profile-panel" id="profile-picture-settings">
+        <span class="profile-panel-number">02</span>
+        <h2>{{ t('Profile picture') }}</h2>
+        <p>{{ t('Upload a JPG, PNG, GIF, or WebP image up to 5 MB.') }}</p>
+        <form class="stacked-form" method="post" action="{{ url_for('main.update_profile_picture') }}" enctype="multipart/form-data" data-preserve-scroll>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>{{ t('Choose image') }}<input type="file" name="profile_picture" accept="image/jpeg,image/png,image/gif,image/webp" required></label>
+          <button class="button button-coral" type="submit">{{ t('Update picture') }}</button>
+        </form>
+        {{ profile_status('picture') }}
+        {% if current_user.profile_image_name %}
+          <form method="post" action="{{ url_for('main.remove_profile_picture') }}" data-preserve-scroll>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="profile-remove-link" type="submit">{{ t('Remove current picture') }}</button>
+          </form>
+        {% endif %}
+      </article>
+
+      <article class="profile-panel" id="profile-password-settings">
+        <span class="profile-panel-number">03</span>
+        <h2>{{ t('Change password') }}</h2>
+        <p>{{ t('Confirm your current password before choosing a new one.') }}</p>
+        <form class="stacked-form" method="post" action="{{ url_for('main.change_password') }}" data-preserve-scroll data-password-change-form>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="profile-password-field">
+            <label for="profile-current-password">{{ t('Current password') }}</label>
+            <div class="password-input-control">
+              <input id="profile-current-password" type="password" name="current_password" autocomplete="current-password" required>
+              <button class="password-visibility-toggle" type="button" data-password-visibility-toggle data-show-label="{{ t('Show password') }}" data-hide-label="{{ t('Hide password') }}" aria-label="{{ t('Show password') }}" aria-pressed="false">
+                <svg class="password-visibility-show" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                <svg class="password-visibility-hide" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.1A10.6 10.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16.6 16.6 0 0 1-2.1 2.8M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.4 4-1"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="profile-password-field">
+            <label for="profile-new-password">{{ t('New password') }}</label>
+            <div class="password-input-control">
+              <input id="profile-new-password" type="password" name="new_password" minlength="8" autocomplete="new-password" aria-describedby="profile-new-password-check" required>
+              <button class="password-visibility-toggle" type="button" data-password-visibility-toggle data-show-label="{{ t('Show password') }}" data-hide-label="{{ t('Hide password') }}" aria-label="{{ t('Show password') }}" aria-pressed="false">
+                <svg class="password-visibility-show" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                <svg class="password-visibility-hide" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.1A10.6 10.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16.6 16.6 0 0 1-2.1 2.8M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.4 4-1"/></svg>
+              </button>
+            </div>
+            <small id="profile-new-password-check" class="password-check" data-new-password-check data-state="neutral" aria-live="polite">{{ t('Use at least 8 characters.') }}</small>
+          </div>
+          <div class="profile-password-field">
+            <label for="profile-confirm-password">{{ t('Confirm new password') }}</label>
+            <div class="password-input-control">
+              <input id="profile-confirm-password" type="password" name="confirm_password" minlength="8" autocomplete="new-password" aria-describedby="profile-confirm-password-check" required>
+              <button class="password-visibility-toggle" type="button" data-password-visibility-toggle data-show-label="{{ t('Show password') }}" data-hide-label="{{ t('Hide password') }}" aria-label="{{ t('Show password') }}" aria-pressed="false">
+                <svg class="password-visibility-show" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                <svg class="password-visibility-hide" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 18M10.6 6.1A10.6 10.6 0 0 1 12 6c6 0 9.5 6 9.5 6a16.6 16.6 0 0 1-2.1 2.8M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.4 4-1"/></svg>
+              </button>
+            </div>
+            <small id="profile-confirm-password-check" class="password-check" data-confirm-password-check data-state="neutral" aria-live="polite">{{ t('Enter the confirmation password.') }}</small>
+          </div>
+          <button class="button button-coral" type="submit">{{ t('Change password') }}</button>
+        </form>
+        {{ profile_status('password') }}
+      </article>
+
+      <article class="profile-panel profile-preferences-panel">
+        <span class="profile-panel-number">04</span>
+        <h2>{{ t('Preferences') }}</h2>
+        <p>{{ t('Choose your language, appearance, and color separately.') }}</p>
+        <div class="profile-preference-control">
+          {% include "_preference_selector.html" %}
+        </div>
+      </article>
+    </div>
+
+    <section class="profile-reports" id="reports">
+      <div class="section-heading">
+        <div><div class="eyebrow eyebrow-dark"><span></span> {{ t('Your contributions') }}</div><h2>{{ t('Your reports') }}</h2><p>{{ t('View and manage every report submitted by this account.') }}</p></div>
+        <a class="button button-coral" href="{{ url_for('main.create_report') }}">+ {{ t('Share a report') }}</a>
+      </div>
+      {% if reports %}
+        <div class="profile-report-list">
+          {% for report in reports %}
+            <article class="profile-report-row{% if report.archived_at %} is-archived{% endif %}">
+              <div>
+                <span class="contact-status{% if report.archived_at %} status-archived{% endif %}">{{ t('Archived') if report.archived_at else t('Published') }}</span>
+                <h3><a href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ report.name }}</a></h3>
+                <p>{{ t('Submitted') }} <time datetime="{{ report.created_at|datetime_iso_utc }}" data-local-time data-local-time-precision="date"><span data-local-time-value>{{ report.created_at|format_local_datetime('date') }}</span></time></p>
+              </div>
+              <div class="profile-report-actions">
+                <a class="button button-outline" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ t('View report') }}</a>
+                {% if not report.archived_at %}<a class="button button-coral" href="{{ url_for('main.edit_report', report_guid=report.guid) }}">{{ t('Edit') }}</a>{% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state"><div class="empty-icon"><span>?</span></div><h2>{{ t('You have not created any reports yet.') }}</h2><a class="button button-coral" href="{{ url_for('main.create_report') }}">{{ t('Create your first report') }}</a></div>
+      {% endif %}
+    </section>
+  </div>
+</section>
+{% endblock %}

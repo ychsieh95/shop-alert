@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Privacy') }} — ShopAlert{% endblock %}
+
+{% block content %}
+<section class="info-hero privacy-info-hero">
+  <div class="container info-hero-inner">
+    <div>
+      <div class="eyebrow"><span></span> {{ '資料透明度' if locale == 'zh-TW' else 'Data transparency' }}</div>
+      <h1>{{ '隱私權政策' if locale == 'zh-TW' else 'Privacy policy' }}</h1>
+      <p>{{ '了解 ShopAlert 收集哪些資料、如何使用資料，以及公開紀錄與外部服務會帶來哪些影響。' if locale == 'zh-TW' else 'Understand what ShopAlert collects, how it is used, and what public reports and external services mean for your privacy.' }}</p>
+    </div>
+    <div class="info-hero-mark info-hero-mark-privacy" aria-hidden="true">
+      <svg viewBox="0 0 120 120"><path d="M60 15 97 31v27c0 24-14 39-37 49C37 97 23 82 23 58V31z"/><rect x="43" y="53" width="34" height="28" rx="5"/><path d="M50 53v-8a10 10 0 0 1 20 0v8M60 65v7"/></svg>
+    </div>
+  </div>
+</section>
+
+<section class="info-page">
+  <div class="container privacy-container">
+    {% if locale == 'zh-TW' %}
+      <div class="privacy-meta"><strong>生效日期</strong><time datetime="2026-08-14">2026 年 8 月 14 日</time><span>版本 1.5</span></div>
+      <aside class="privacy-highlight">
+        <span aria-hidden="true">!</span>
+        <div><strong>提交紀錄前請先了解</strong><p>店家紀錄、爭議內容、主題標籤、來源連結、證據媒體、媒體顯示檔名、作者顯示名稱、個人圖片與時間戳記是公開資料。請勿提交不必要的個人資料、帳密、私人 Token 或未經授權的敏感內容。</p></div>
+      </aside>
+      <div class="privacy-layout">
+        <nav class="privacy-toc" aria-label="本頁目錄">
+          <strong>本頁內容</strong>
+          <a href="#privacy-scope">適用範圍</a>
+          <a href="#privacy-collect">收集的資料</a>
+          <a href="#privacy-use">資料用途</a>
+          <a href="#privacy-public">公開內容</a>
+          <a href="#privacy-location">位置資料</a>
+          <a href="#privacy-storage">Cookie 與本機儲存</a>
+          <a href="#privacy-services">外部服務</a>
+          <a href="#privacy-retention">保存與刪除</a>
+          <a href="#privacy-rights">你的選擇</a>
+          <a href="#privacy-contact">聯絡方式</a>
+        </nav>
+        <article class="privacy-document">
+          <section id="privacy-scope"><span>01</span><h2>適用範圍</h2><p>本政策適用於 ShopAlert 網站及其帳號、搜尋、店家紀錄、證據媒體與管理員聯絡功能。外部網站及第三方服務依其各自的隱私政策處理資料。</p></section>
+          <section id="privacy-collect"><span>02</span><h2>我們收集的資料</h2><ul><li><strong>帳號資料：</strong>顯示名稱、唯一使用者名稱、Email、選用的個人圖片、密碼雜湊、帳號建立時間、停權狀態及登入 Session。ShopAlert 不儲存明文密碼。</li><li><strong>登入安全資料：</strong>登入失敗次數、期間與鎖定時間。限制索引由正規化帳號識別資訊與用戶端 IP 進行 SHA-256 計算；已知的使用者名稱會統一對應至帳號 Email，使兩種登入方式共用限制。限制資料表不保存原始組合。</li><li><strong>公開紀錄：</strong>店名、實體或網路商店狀態、地址、座標、Google Place ID、爭議說明、主題標籤、來源與社群連結、證據圖片／影片、媒體顯示檔名及建立／更新時間。</li><li><strong>管理員聯絡資料：</strong>檢舉原因、訊息內容、回覆 Email、提交者帳號、相關紀錄及處理狀態。</li><li><strong>技術資料：</strong>伺服器或託管服務可能記錄 IP、User-Agent、請求時間、網址、回應狀態與安全事件。</li></ul></section>
+          <section id="privacy-use"><span>03</span><h2>資料用途</h2><p>我們使用資料來建立及驗證帳號、提供個人檔案、搜尋與附近紀錄、發布及編輯使用者提交內容、顯示證據、處理管理員聯絡訊息、執行紀錄封存／刪除與帳號停權、防止登入濫用、檢查外部連結、維護安全性，以及診斷服務問題。</p><p>ShopAlert 目前沒有內建廣告或行為分析工具，也不會以出售個人資料為目的收集資料。</p></section>
+          <section id="privacy-public"><span>04</span><h2>公開內容與分享</h2><p>已發布紀錄可由任何人瀏覽及搜尋。作者的顯示名稱與個人圖片會公開，但帳號 Email 不會顯示於公開紀錄。公開資料可能被搜尋引擎、網頁封存服務或其他人複製；即使 ShopAlert 日後移除內容，也無法保證第三方副本同時消失。</p><p>「聯絡管理員」訊息與回覆 Email 只供授權管理員審查，不會顯示於公開紀錄。</p></section>
+          <section id="privacy-location"><span>05</span><h2>位置資料</h2><p>只有在你允許瀏覽器定位後，附近搜尋才會取得裝置提供的經緯度。座標會送至 ShopAlert 以計算距離，但不會儲存為帳號個人檔案。由於座標位於搜尋請求網址中，可能出現在瀏覽器歷史、反向代理或伺服器存取紀錄。你可以拒絕定位並繼續使用關鍵字搜尋。</p><p>若部署環境提供 Cloudflare IP 國家／時區 Header，ShopAlert 會以 IP 推估的國家設定尚未選擇偏好的預設語言，並以推估時區作為時間顯示備援；你自行選擇的語言優先。瀏覽器會在裝置端依實際時區調整公開時間戳記，不會將瀏覽器時區傳回 ShopAlert。這些推估值不會儲存於帳號個人檔案。</p><p>店家紀錄本身的地址與座標屬於公開紀錄資料，與搜尋者的目前位置不同。</p></section>
+          <section id="privacy-storage"><span>06</span><h2>Cookie 與瀏覽器儲存</h2><ul><li>必要的簽章 Session Cookie 用於登入狀態、CSRF 防護、語言偏好及暫時訊息。</li><li>選擇「保持登入」時會設定較長效的登入 Cookie。</li><li>淺色／深色外觀偏好以 `shopalert-theme` 儲存於瀏覽器 Local Storage；珊瑚色／黃色／紫色色彩偏好則以 `shopalert-color-theme` 儲存。</li><li>若部署環境使用反向代理或安全服務，該服務可能另設必要 Cookie。</li></ul></section>
+          <section id="privacy-services"><span>07</span><h2>外部服務</h2><div class="privacy-service-grid"><div><h3>Google</h3><p>Google Fonts 會從 Google 伺服器載入。啟用 Google Places 時，搜尋文字、Place ID、語言／地區設定與瀏覽器技術資料會傳給 Google，以提供地點建議及本地化地址。</p><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google 隱私權政策 ↗</a></div><div><h3>Cloudflare Turnstile</h3><p>啟用時，登入及註冊頁會載入 Turnstile。ShopAlert 會將挑戰 Token、用戶端 IP、操作名稱與驗證識別資訊送至 Cloudflare，以判斷是否為自動化濫用。</p><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare 隱私權政策 ↗</a></div><div><h3>Cloudflare URL Scanner</h3><p>爭議連結的完整網址會以 Unlisted 方式提交給 Cloudflare。Cloudflare 說明成功掃描保留 12 個月，失敗掃描保留 30 天；知道掃描 ID 的人仍可能存取 Unlisted 報告。</p><a href="https://developers.cloudflare.com/radar/investigate/url-scanner/" target="_blank" rel="noopener">URL Scanner 文件 ↗</a></div><div><h3>外部連結與截圖</h3><p>ShopAlert 伺服器會連線至爭議來源網址以產生快取截圖。訪客只有確認後才會前往外部網站；離站後，目的網站會依其政策接收一般連線資料。</p></div></div></section>
+          <section id="privacy-retention"><span>08</span><h2>保存、修正與刪除</h2><p>帳號、紀錄、媒體與管理員聯絡資料會保留至提供及維護服務不再需要，或收到適當處理要求為止。目前沒有保證固定的自動刪除期限。管理員封存紀錄時會停止公開顯示但仍保存資料；永久刪除會移除目前資料庫紀錄、證據檔案及相關預覽快取，但備份可能依其保存週期延後清除。為履行安全、爭議處理或法律義務，部分資料可能保留較長時間。</p><p>紀錄作者可以直接編輯自己的未封存紀錄，並可更換或移除個人圖片。若要請求帳號或其他資料的查閱、修正或刪除，請使用下方聯絡方式；我們可能需要先驗證身分及確認請求範圍。</p></section>
+          <section id="privacy-security"><span>09</span><h2>安全與國際處理</h2><p>ShopAlert 使用密碼雜湊、CSRF 防護、登入限制、隨機檔案儲存名稱、輸入驗證及外部網址檢查等措施。然而任何系統都無法保證絕對安全。Google、Cloudflare、託管或基礎設施供應商可能在你所在國家／地區以外處理資料。</p></section>
+          <section id="privacy-rights"><span>10</span><h2>你的選擇與責任</h2><ul><li>你可以拒絕瀏覽器定位、手動輸入店家資料，或不使用 Google Places。</li><li>你可以清除 Cookie／Local Storage，但可能因此登出或重設偏好。</li><li>請只上傳你有權分享的內容，並避免加入無關的個人資料。</li><li>本服務不是為兒童專門設計；請勿提交兒童的敏感或可識別資料。</li></ul></section>
+          <section id="privacy-changes"><span>11</span><h2>政策更新</h2><p>若資料處理方式改變，我們可能更新本政策，並在本頁調整生效日期。重大產品或安全變更也會記錄於公開的「更新紀錄」。</p></section>
+          <section id="privacy-contact"><span>12</span><h2>聯絡方式</h2><p>如有隱私問題或資料請求，請聯絡 ShopAlert 管理員。</p>{% if privacy_contact_email %}<a class="privacy-contact-link" href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>{% else %}<p>目前尚未設定公開聯絡 Email；你可以在相關紀錄使用「檢舉此項目」功能。</p>{% endif %}<p class="privacy-legal-note">本政策說明目前的產品行為，不構成針對特定司法管轄區的法律意見。</p></section>
+        </article>
+      </div>
+    {% else %}
+      <div class="privacy-meta"><strong>Effective</strong><time datetime="2026-08-14">August 14, 2026</time><span>Version 1.5</span></div>
+      <aside class="privacy-highlight">
+        <span aria-hidden="true">!</span>
+        <div><strong>Know this before submitting</strong><p>Shop reports, allegations, hashtags, source links, evidence media, media display filenames, author display names, profile pictures, and timestamps are public. Do not submit unnecessary personal data, credentials, private tokens, or sensitive material you are not authorized to share.</p></div>
+      </aside>
+      <div class="privacy-layout">
+        <nav class="privacy-toc" aria-label="On this page">
+          <strong>On this page</strong>
+          <a href="#privacy-scope">Scope</a>
+          <a href="#privacy-collect">Information collected</a>
+          <a href="#privacy-use">How it is used</a>
+          <a href="#privacy-public">Public content</a>
+          <a href="#privacy-location">Location data</a>
+          <a href="#privacy-storage">Cookies and storage</a>
+          <a href="#privacy-services">External services</a>
+          <a href="#privacy-retention">Retention and deletion</a>
+          <a href="#privacy-rights">Your choices</a>
+          <a href="#privacy-contact">Contact</a>
+        </nav>
+        <article class="privacy-document">
+          <section id="privacy-scope"><span>01</span><h2>Scope</h2><p>This policy applies to the ShopAlert website and its account, search, shop-report, evidence-media, and administrator-contact features. External websites and third-party services process information under their own privacy policies.</p></section>
+          <section id="privacy-collect"><span>02</span><h2>Information we collect</h2><ul><li><strong>Account data:</strong> display name, unique username, email address, optional profile picture, password hash, account creation time, ban status, and login session. ShopAlert does not store plaintext passwords.</li><li><strong>Login-security data:</strong> failed-attempt count, timing, and lockout time. The throttle key is a SHA-256 value derived from the normalized account identifier and client IP; a recognized username is canonicalized to the account email so both login methods share the limit. The throttle table does not retain the raw pair.</li><li><strong>Public reports:</strong> shop name, physical/online status, address, coordinates, Google Place ID, allegation text, hashtags, source and social links, evidence images/videos, media display filenames, and created/updated timestamps.</li><li><strong>Administrator contacts:</strong> report reason, message, reply email, sender account, related report, and resolution status.</li><li><strong>Technical data:</strong> the server or hosting provider may log IP address, user agent, request time, URL, response status, and security events.</li></ul></section>
+          <section id="privacy-use"><span>03</span><h2>How we use information</h2><p>We use information to create and authenticate accounts, provide profiles, keyword and nearby search, publish and edit user submissions, display evidence, process administrator contacts, archive or delete reports, enforce account bans, prevent login abuse, check external links, maintain security, and diagnose service problems.</p><p>ShopAlert currently has no built-in advertising or behavioral analytics, and does not collect personal information for sale.</p></section>
+          <section id="privacy-public"><span>04</span><h2>Public content and sharing</h2><p>Published reports can be viewed and searched by anyone. The author's display name and profile picture are public, but the account email is not shown on public reports. Search engines, web archives, or other people may copy public material; removing it from ShopAlert cannot guarantee removal of third-party copies.</p><p>“Contact the administrator” messages and reply emails are available only to authorized administrators and are not shown on the public report.</p></section>
+          <section id="privacy-location"><span>05</span><h2>Location data</h2><p>Nearby search requests device coordinates only after you grant browser permission. Coordinates are sent to ShopAlert to calculate distance, but are not saved as an account profile. Because coordinates appear in the search-request URL, they may be recorded in browser history, reverse-proxy logs, or server access logs. You may decline location access and continue with keyword search.</p><p>When the deployment supplies Cloudflare IP-country/timezone headers, ShopAlert uses the IP-estimated country to choose the default language before you select a preference and uses the estimated timezone as a timestamp fallback. Your explicit language selection takes priority. The browser adjusts public timestamps to the device's actual timezone without sending that browser timezone to ShopAlert. These estimates are not stored in an account profile.</p><p>A reported shop's address and coordinates are public report data and are separate from a searcher's current location.</p></section>
+          <section id="privacy-storage"><span>06</span><h2>Cookies and browser storage</h2><ul><li>An essential signed session cookie supports authentication, CSRF protection, language preference, and temporary messages.</li><li>Selecting “Keep me logged in” sets a longer-lived login cookie.</li><li>The light/dark appearance preference is stored as `shopalert-theme` in browser Local Storage; the coral/yellow/purple color preference is stored as `shopalert-color-theme`.</li><li>A reverse proxy or security service used by a deployment may set additional essential cookies.</li></ul></section>
+          <section id="privacy-services"><span>07</span><h2>External services</h2><div class="privacy-service-grid"><div><h3>Google</h3><p>Google Fonts loads from Google's servers. When Google Places is enabled, search text, Place IDs, language/region settings, and browser technical data are sent to Google to provide place suggestions and localized addresses.</p><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy ↗</a></div><div><h3>Cloudflare Turnstile</h3><p>When enabled, login and sign-up pages load Turnstile. ShopAlert sends the challenge token, client IP, action name, and verification identifier to Cloudflare to assess automated abuse.</p><a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Privacy Policy ↗</a></div><div><h3>Cloudflare URL Scanner</h3><p>The complete controversy-link URL is submitted to Cloudflare as Unlisted. Cloudflare documents 12-month retention for successful scans and 30 days for failed scans; anyone who knows the scan ID may still access an Unlisted report.</p><a href="https://developers.cloudflare.com/radar/investigate/url-scanner/" target="_blank" rel="noopener">URL Scanner documentation ↗</a></div><div><h3>External links and screenshots</h3><p>ShopAlert's server contacts controversy-source URLs to create cached screenshots. Visitors contact the external website only after confirming that they wish to leave; once they do, the destination receives ordinary connection data under its own policy.</p></div></div></section>
+          <section id="privacy-retention"><span>08</span><h2>Retention, correction, and deletion</h2><p>Accounts, reports, media, and administrator-contact records are retained while needed to provide and maintain the service or until an appropriate request is processed. There is currently no guaranteed fixed automatic-deletion period. Archiving hides a report publicly while retaining its data. Permanent deletion removes the current database record, evidence files, and related preview cache, though backups may expire later under their own retention cycle. Some data may be retained longer for security, dispute handling, or legal obligations.</p><p>Report authors can edit their own unarchived reports and replace or remove a profile picture. To request access, correction, or deletion of an account or other information, use the contact details below. We may need to verify identity and clarify the scope first.</p></section>
+          <section id="privacy-security"><span>09</span><h2>Security and international processing</h2><p>ShopAlert uses password hashing, CSRF protection, login throttling, randomized stored filenames, input validation, and external-URL checks. No system can guarantee absolute security. Google, Cloudflare, hosting, or infrastructure providers may process information outside your country or region.</p></section>
+          <section id="privacy-rights"><span>10</span><h2>Your choices and responsibilities</h2><ul><li>You can decline browser location, enter a shop manually, or avoid Google Places.</li><li>You can clear cookies and Local Storage, though this may sign you out or reset preferences.</li><li>Only upload material you are authorized to share, and avoid unrelated personal data.</li><li>The service is not specifically designed for children; do not submit sensitive or identifying information about children.</li></ul></section>
+          <section id="privacy-changes"><span>11</span><h2>Policy changes</h2><p>We may update this policy when data practices change and will revise the effective date on this page. Significant product or security changes are also recorded in the public Updates page.</p></section>
+          <section id="privacy-contact"><span>12</span><h2>Contact</h2><p>For privacy questions or data requests, contact the ShopAlert administrator.</p>{% if privacy_contact_email %}<a class="privacy-contact-link" href="mailto:{{ privacy_contact_email }}">{{ privacy_contact_email }}</a>{% else %}<p>No public contact email is configured. You may use “Report this item” on the relevant report.</p>{% endif %}<p class="privacy-legal-note">This policy describes current product behavior and is not legal advice for a particular jurisdiction.</p></section>
+        </article>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

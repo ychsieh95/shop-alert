@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ t('Access denied') }} — ShopAlert{% endblock %}
+{% block content %}
+<section class="error-page">
+  <div>
+    <span>403</span>
+    <h1>{{ t('You do not have access to this page.') }}</h1>
+    <p>{{ t('Return to your reports or contact the site administrator if you believe this is a mistake.') }}</p>
+    {% if current_user.is_authenticated %}
+      <a class="button button-coral" href="{{ url_for('main.my_reports') }}">{{ t('View my reports') }}</a>
+    {% else %}
+      <a class="button button-coral" href="{{ url_for('auth.login') }}">{{ t('Log in') }}</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

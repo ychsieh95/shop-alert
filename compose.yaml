@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: shopalert-holey-cc:local
+    env_file:
+      - .env
+    init: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - instance-data:/instance
+    shm_size: 256mb
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  instance-data:
+    name: shop-alert-data

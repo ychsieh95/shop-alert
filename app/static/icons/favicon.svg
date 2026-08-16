@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">ShopAlert</title>
+  <rect width="512" height="512" rx="112" fill="#0c2524"/>
+  <path d="M256 54c18 0 34 8 48 21l133 132c27 27 27 70 0 97L304 437c-27 27-69 27-96 0L75 304c-27-27-27-70 0-97L208 75c14-13 30-21 48-21Z" fill="#ee705d"/>
+  <path d="M166 151h180l38 68v12c0 29-23 52-52 52-15 0-29-7-39-18-9 11-22 18-37 18s-28-7-37-18c-10 11-24 18-39 18-29 0-52-23-52-52v-12l38-68Z" fill="#0c2524"/>
+  <path d="M190 177h29l-9 57c-2 13-12 22-25 22-15 0-27-12-27-27v-3l32-49ZM242 177h28v56c0 13-6 23-14 23s-14-10-14-23v-56ZM293 177h29l32 49v3c0 15-12 27-27 27-13 0-23-9-25-22l-9-57Z" fill="#ee705d"/>
+  <rect x="164" y="260" width="27" height="91" rx="13" fill="#0c2524"/>
+  <rect x="321" y="260" width="27" height="91" rx="13" fill="#0c2524"/>
+  <rect x="205" y="253" width="102" height="111" rx="23" fill="#0c2524"/>
+  <rect x="242" y="271" width="28" height="57" rx="14" fill="#f7f4ec"/>
+  <circle cx="256" cy="345" r="14" fill="#f7f4ec"/>
+</svg>
