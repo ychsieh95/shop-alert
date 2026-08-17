@@ -33,6 +33,12 @@ from .extensions import db
 from .i18n import SUPPORTED_LOCALES, get_locale, translate
 from .cloudflare_url_scanner import CloudflareURLScannerError, scan_url
 from .link_preview import LinkPreviewError, generate_link_preview, is_public_http_url
+from .thumbnails import (
+    THUMBNAIL_MIME_TYPE,
+    ThumbnailError,
+    discard_thumbnail,
+    ensure_thumbnail,
+)
 from .models import (
     ProofMedia,
     ReportContact,
@@ -72,6 +78,10 @@ DEFAULT_HASHTAG_SUGGESTIONS = {
 }
 MAX_POPULAR_HASHTAGS = 6
 MAX_MEDIA_NAME_LENGTH = 255
+# Batches a single home-page render may contain, and the furthest batch the
+# scroll-loading endpoint will start from.
+MAX_BROWSE_BATCHES = 20
+MAX_BROWSE_OFFSET = 100_000
 MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024
 LINK_PREVIEW_LOCK = Lock()
 UPDATE_HISTORY_PATH = Path(__file__).resolve().parent.parent / "data" / "update_history.json"
@@ -362,12 +372,31 @@ def _report_by_guid_or_404(report_guid) -> ShopReport:
     return report
 
 
-@main_bp.get("/")
-def home():
-    q = request.args.get("q", "").strip()[:120]
-    user_lat = _float_between(request.args.get("lat", ""), -90, 90)
-    user_lng = _float_between(request.args.get("lng", ""), -180, 180)
-    radius = _float_between(request.args.get("radius", "10"), 1, 100) or 10
+def _browse_filters() -> dict:
+    """Read the shared query parameters used by the home listing and its batches."""
+
+    return {
+        "q": request.args.get("q", "").strip()[:120],
+        "user_lat": _float_between(request.args.get("lat", ""), -90, 90),
+        "user_lng": _float_between(request.args.get("lng", ""), -180, 180),
+        "radius": _float_between(request.args.get("radius", "10"), 1, 100) or 10,
+    }
+
+
+def _browse_offset(maximum: int) -> int:
+    """Read the index of the first report to list, ignoring unusable values."""
+
+    try:
+        offset = int(request.args.get("offset", "0"))
+    except ValueError:
+        return 0
+    return max(0, min(offset, maximum))
+
+
+def _browse_reports(
+    *, q: str, user_lat, user_lng, radius: float, start: int, count: int
+) -> tuple[list[ShopReport], bool]:
+    """Return one listing batch plus whether further reports remain after it."""
 
     query = ShopReport.query.filter(ShopReport.archived_at.is_(None))
     if q:
@@ -384,27 +413,67 @@ def home():
                 ShopReport.hashtags_json.ilike(hashtag_pattern),
             )
         )
+    query = query.order_by(ShopReport.created_at.desc(), ShopReport.id.desc())
 
-    reports = query.order_by(ShopReport.created_at.desc()).all()
-    nearby_mode = user_lat is not None and user_lng is not None
-    if nearby_mode:
-        nearby_reports = []
-        for report in reports:
+    if user_lat is not None and user_lng is not None:
+        # Distance is computed in Python, so nearby results are ranked in full
+        # before the requested batch is sliced out of them.
+        matched = []
+        for report in query.yield_per(100):
             if report.latitude is None or report.longitude is None:
                 continue
-            report.distance_km = _distance_km(
+            distance = _distance_km(
                 user_lat, user_lng, report.latitude, report.longitude
             )
-            if report.distance_km <= radius:
-                nearby_reports.append(report)
-        reports = sorted(nearby_reports, key=lambda item: item.distance_km)
+            if distance <= radius:
+                report.distance_km = distance
+                matched.append(report)
+        matched.sort(key=lambda item: item.distance_km)
+        return matched[start : start + count], len(matched) > start + count
+
+    window = query.offset(start).limit(count + 1).all()
+    return window[:count], len(window) > count
+
+
+@main_bp.get("/")
+def home():
+    filters = _browse_filters()
+    batch_size = int(current_app.config["HOME_RECENT_REPORTS_COUNT"])
+    # A full page render repeats every earlier batch, so visitors without
+    # JavaScript keep the reports they already loaded when they ask for more.
+    offset = _browse_offset((MAX_BROWSE_BATCHES - 1) * batch_size)
+    reports, has_more = _browse_reports(**filters, start=0, count=offset + batch_size)
+    nearby_mode = filters["user_lat"] is not None and filters["user_lng"] is not None
 
     return render_template(
         "home.html",
         reports=reports,
-        q=q,
         nearby_mode=nearby_mode,
-        radius=radius,
+        # Without a keyword or a location the listing is a recent-activity feed.
+        recent_mode=not filters["q"] and not nearby_mode,
+        has_more=has_more,
+        next_offset=len(reports),
+        **filters,
+    )
+
+
+@main_bp.get("/api/reports/page")
+def reports_page():
+    """Render the next listing batch for the home page's scroll loading."""
+
+    filters = _browse_filters()
+    batch_size = int(current_app.config["HOME_RECENT_REPORTS_COUNT"])
+    offset = _browse_offset(MAX_BROWSE_OFFSET)
+    reports, has_more = _browse_reports(**filters, start=offset, count=batch_size)
+    return jsonify(
+        {
+            "html": "".join(
+                render_template("_report_card.html", report=report)
+                for report in reports
+            ),
+            "has_more": has_more,
+            "next_offset": offset + len(reports),
+        }
     )
 
 
@@ -1115,6 +1184,7 @@ def edit_report(report_guid):
             else:
                 for path in removed_paths:
                     path.unlink(missing_ok=True)
+                    discard_thumbnail(path.name)
                 flash("Report updated.", "success")
                 return redirect(
                     url_for("main.report_detail", report_guid=report.guid)
@@ -1210,6 +1280,7 @@ def admin_delete_report(report_guid):
     upload_folder = Path(current_app.config["UPLOAD_FOLDER"])
     preview_folder = Path(current_app.config["LINK_PREVIEW_FOLDER"])
     media_paths = [upload_folder / media.stored_name for media in report.media]
+    thumbnail_names = [media.stored_name for media in report.media]
     preview_paths = []
     for link in report.controversy_links:
         cache_key = hashlib.sha256(link.encode("utf-8")).hexdigest()
@@ -1223,6 +1294,8 @@ def admin_delete_report(report_guid):
             path.unlink(missing_ok=True)
         except OSError:
             current_app.logger.warning("Could not remove deleted report file %s", path)
+    for stored_name in thumbnail_names:
+        discard_thumbnail(stored_name)
     flash("Report permanently deleted.", "success")
     return redirect(url_for("main.admin_dashboard") + "#reports")
 
@@ -1285,3 +1358,33 @@ def proof_media(media_id: int):
         mimetype=media.mime_type,
         conditional=True,
     )
+
+
+@main_bp.get("/media/<int:media_id>/thumbnail")
+def proof_thumbnail(media_id: int):
+    """Serve a small cached copy of an image for listings and gallery rails."""
+
+    media = db.get_or_404(ProofMedia, media_id)
+    if media.report.archived_at is not None and not _can_view_archived_report(media.report):
+        abort(404)
+    if media.media_type == "image":
+        try:
+            thumbnail = ensure_thumbnail(media.stored_name)
+        except ThumbnailError:
+            current_app.logger.warning(
+                "Serving the original upload for media %s: no thumbnail", media_id
+            )
+        else:
+            response = send_from_directory(
+                thumbnail.parent,
+                thumbnail.name,
+                mimetype=THUMBNAIL_MIME_TYPE,
+                conditional=True,
+                # Uploads never change under a stored name, so the thumbnail
+                # generated from one can be cached for as long as the browser
+                # is willing to keep it.
+                max_age=31_536_000,
+            )
+            response.headers["Cache-Control"] += ", immutable"
+            return response
+    return proof_media(media_id)

@@ -106,7 +106,7 @@
                 <div class="existing-media-item">
                   <span class="existing-media-preview">
                     {% if media.media_type == 'image' %}
-                      <img src="{{ url_for('main.proof_media', media_id=media.id) }}" alt="">
+                      <img src="{{ url_for('main.proof_thumbnail', media_id=media.id) }}" alt="" loading="lazy" decoding="async">
                     {% else %}
                       <video src="{{ url_for('main.proof_media', media_id=media.id) }}" muted preload="metadata" playsinline></video>
                       <i aria-hidden="true">▶</i>

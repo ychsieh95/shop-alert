@@ -288,7 +288,7 @@
     updateCount();
   }
 
-  document.querySelectorAll('[data-local-time]').forEach((element) => {
+  const formatLocalTimes = (root) => root.querySelectorAll('[data-local-time]').forEach((element) => {
     const value = element.querySelector('[data-local-time-value]');
     const timezone = element.querySelector('[data-local-timezone]');
     const instant = new Date(element.getAttribute('datetime'));
@@ -311,6 +311,86 @@
       // Keep the server-rendered Cloudflare timezone or UTC fallback.
     }
   });
+  formatLocalTimes(document);
+
+  const reportGrid = document.querySelector('[data-report-grid]');
+  const reportMore = document.querySelector('[data-report-more]');
+  if (reportGrid && reportMore && 'IntersectionObserver' in window) {
+    const moreLink = reportMore.querySelector('[data-report-more-link]');
+    const moreStatus = reportMore.querySelector('[data-report-more-status]');
+    const loadingLabel = reportMore.dataset.loadingLabel || 'Loading more reports…';
+    const failedLabel = reportMore.dataset.failedLabel || 'More reports could not be loaded. Please try again.';
+    let nextOffset = Number(reportMore.dataset.nextOffset) || 0;
+    let loading = false;
+    let finished = false;
+
+    const setMoreStatus = (text, busy) => {
+      moreStatus.textContent = '';
+      if (busy) {
+        const spinner = document.createElement('span');
+        spinner.className = 'report-more-spinner';
+        spinner.setAttribute('aria-hidden', 'true');
+        moreStatus.appendChild(spinner);
+      }
+      moreStatus.appendChild(document.createTextNode(text));
+    };
+
+    const loadMoreReports = async () => {
+      if (loading || finished) return;
+      loading = true;
+      reportMore.dataset.loading = 'true';
+      setMoreStatus(loadingLabel, true);
+      try {
+        const url = new URL(reportMore.dataset.batchUrl, window.location.origin);
+        url.searchParams.set('offset', String(nextOffset));
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error('Report batch request failed');
+        const payload = await response.json();
+        const batch = document.createElement('template');
+        batch.innerHTML = payload.html || '';
+        const added = batch.content.children.length;
+        formatLocalTimes(batch.content);
+        reportGrid.appendChild(batch.content);
+        nextOffset = Number(payload.next_offset) || nextOffset + added;
+        reportMore.dataset.nextOffset = String(nextOffset);
+        if (moreLink) {
+          const fallback = new URL(moreLink.href, window.location.origin);
+          fallback.searchParams.set('offset', String(nextOffset));
+          moreLink.href = fallback.toString();
+        }
+        setMoreStatus('', false);
+        if (!payload.has_more || !added) {
+          finished = true;
+          moreObserver.disconnect();
+          if (reportMore.dataset.completeLabel && locationStatus) {
+            locationStatus.textContent = reportMore.dataset.completeLabel;
+          }
+          reportMore.remove();
+        } else {
+          // Observers only report threshold crossings, so a sentinel still in
+          // view after the append is re-observed to load the batch after it.
+          moreObserver.unobserve(reportMore);
+          moreObserver.observe(reportMore);
+        }
+      } catch (_error) {
+        setMoreStatus(failedLabel, false);
+      } finally {
+        loading = false;
+        delete reportMore.dataset.loading;
+      }
+    };
+
+    const moreObserver = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) loadMoreReports();
+    }, { rootMargin: '400px 0px' });
+    moreObserver.observe(reportMore);
+    if (moreLink) {
+      moreLink.addEventListener('click', (event) => {
+        event.preventDefault();
+        loadMoreReports();
+      });
+    }
+  }
 
   document.querySelectorAll('[data-hashtag-editor]').forEach((editor) => {
     const input = editor.querySelector('[data-hashtag-input]');

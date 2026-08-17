@@ -17,6 +17,7 @@ ShopAlert 是一個以 Flask 開發的社群店家爭議紀錄網站。使用者
 - 網路商店紀錄不需要實體地址，且不會出現在附近搜尋結果中
 - 可選用會跟隨目前介面語言的 Google 地點自動完成，並填入可編輯的店名、本地化地址、座標及 Place ID
 - 必須上傳至少一個證據，支援多張圖片或多部影片；多次選取或拖放會持續加入目前清單，並顯示響應式發布前縮圖
+- 於首次請求時產生並快取 WebP 縮圖，供紀錄卡片與證據縮圖列使用，列表載入量僅為原始檔案的一小部分
 - 每筆紀錄最多可加入 10 個選用且可搜尋的主題標籤，支援 Enter／逗號轉標籤、移除標籤、熱門標籤及依介面語言顯示的入門建議
 - 輸入店家名稱或位置時延遲檢查相似紀錄，在圓形檢查圖示顯示即時數量，並以保留草稿的頁內對話框預覽可能已存在的紀錄
 - 每筆紀錄最多可加入 10 個選用爭議／來源網址，並套用 SSRF 檢查、選用的 Cloudflare URL Scanner 判定、伺服器截圖快取及離站確認
@@ -44,6 +45,7 @@ ShopAlert 是一個以 Flask 開發的社群店家爭議紀錄網站。使用者
 - Flask、Flask-SQLAlchemy、Flask-Login、Flask-WTF
 - 預設使用 SQLite，也可設定其他 SQLAlchemy 資料庫網址
 - Jinja 伺服器端樣板、原生 CSS 與 JavaScript
+- 使用 Pillow 產生列表縮圖快取
 
 ## 本機啟動
 
@@ -91,6 +93,7 @@ docker compose down
 | --- | --- | --- | --- |
 | `SECRET_KEY` | 正式環境必填 | 僅供開發的預設值 | 簽署 Session 與 CSRF Token |
 | `DATABASE_URL` | 否 | `sqlite:///shop_alert.db` | SQLAlchemy 資料庫網址 |
+| `HOME_RECENT_REPORTS_COUNT` | 否 | `9` | 首頁每批載入的紀錄數量：頁面初次顯示的批次，以及後續捲動時載入的每一批 |
 | `GOOGLE_MAPS_API_KEY` | 否 | 空白 | 啟用 Google 地點自動完成 |
 | `ADMIN_EMAIL` | 建議設定 | 空白 | 可使用紀錄管理、使用者管理與聯絡收件匣的管理員帳號 |
 | `ADMIN_PASSWORD` | 否 | 空白 | 與 `ADMIN_EMAIL` 一併設定時，啟動時若管理員帳號不存在會自動建立，並讓其登入密碼與此值保持一致（至少 8 個字元） |

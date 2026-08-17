@@ -1,0 +1,29 @@
+<article class="report-card">
+  <a class="report-media" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">
+    {% set cover = report.media[0] %}
+    {% if cover.media_type == 'image' %}
+      <img src="{{ url_for('main.proof_thumbnail', media_id=cover.id) }}" alt="Evidence submitted for {{ report.name }}" loading="lazy" decoding="async">
+    {% else %}
+      <video muted preload="metadata"><source src="{{ url_for('main.proof_media', media_id=cover.id) }}#t=0.1" type="{{ cover.mime_type }}"></video>
+      <span class="video-icon">▶</span>
+    {% endif %}
+    <span class="evidence-pill">{% if locale == 'zh-TW' %}{{ report.media|length }} 個證據檔案{% else %}{{ report.media|length }} evidence file{% if report.media|length != 1 %}s{% endif %}{% endif %}</span>
+    {% if report.distance_km is defined %}<span class="distance-pill">{{ '%.1f'|format(report.distance_km) }} km</span>{% endif %}
+  </a>
+  <div class="report-body">
+    <div class="report-meta"><span>{{ t('Community report') }}</span><time datetime="{{ report.created_at|datetime_iso_utc }}" data-local-time data-local-time-precision="date"><span data-local-time-value>{{ report.created_at|format_local_datetime('date') }}</span></time></div>
+    <h3><a href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ report.name }}</a></h3>
+    {% if report.is_online %}
+      <p class="address online-address"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/></svg>{{ t('Online shop') }}</p>
+    {% else %}
+      <p class="address"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>{{ report.localized_address(locale) }}</p>
+    {% endif %}
+    <p class="excerpt">{{ report.controversy|normalize_line_breaks|truncate(145) }}</p>
+    {% if report.hashtags %}
+      <nav class="hashtag-list hashtag-list-card" aria-label="{{ t('Hashtags') }}">
+        {% for hashtag in report.hashtags %}<a class="hashtag-chip" href="{{ url_for('main.home', q=hashtag) }}#reports">#{{ hashtag }}</a>{% endfor %}
+      </nav>
+    {% endif %}
+    <a class="card-link" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">{{ '查看完整紀錄' if locale == 'zh-TW' else 'Read full report' }} <span>→</span></a>
+  </div>
+</article>

@@ -17,6 +17,7 @@ Important: reports are community-submitted allegations. A production deployment 
 - Online-shop reports that do not require a physical address and are excluded from nearby results
 - Optional Google Place Autocomplete that follows the selected interface language and fills editable name, localized address, coordinates, and Place ID fields
 - Required multi-file evidence upload with image and video support; repeated chooser and drag-and-drop selections append to the current list and render responsive pre-publish thumbnails
+- Cached WebP thumbnails generated on first request and served to report cards and gallery rails, so listings load a fraction of the original upload size
 - Up to 10 optional, searchable hashtags per report, with Enter/comma-to-label input, removable chips, popular tags, and locale-specific starter suggestions
 - Debounced similar-report detection while entering a shop name or location, with a live count in the checker icon and in-page modal previews that preserve the draft
 - Up to 10 optional controversy/source URLs per report, with SSRF checks, optional Cloudflare URL Scanner verdicts, a cached server screenshot, and confirmation before leaving ShopAlert
@@ -44,6 +45,7 @@ Important: reports are community-submitted allegations. A production deployment 
 - Flask, Flask-SQLAlchemy, Flask-Login, and Flask-WTF
 - SQLite by default; another SQLAlchemy database URL can be supplied
 - Server-rendered Jinja templates and vanilla CSS/JavaScript
+- Pillow for cached listing thumbnails
 
 ## Run locally
 
@@ -91,6 +93,7 @@ docker compose down
 | --- | --- | --- | --- |
 | `SECRET_KEY` | Production | Development-only value | Signs sessions and CSRF tokens |
 | `DATABASE_URL` | No | `sqlite:///shop_alert.db` | SQLAlchemy database URL |
+| `HOME_RECENT_REPORTS_COUNT` | No | `9` | Reports per home-page batch: the first batch rendered with the page and each further batch loaded while scrolling |
 | `GOOGLE_MAPS_API_KEY` | No | Empty | Enables Google Place Autocomplete |
 | `ADMIN_EMAIL` | Recommended | Empty | Account granted the report moderation, user management, and contact-inbox dashboard |
 | `ADMIN_PASSWORD` | No | Empty | With `ADMIN_EMAIL`, creates the admin account at startup if missing and keeps its login password in sync (min 8 characters) |

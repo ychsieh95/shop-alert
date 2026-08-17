@@ -1551,6 +1551,151 @@ def test_nearby_search_filters_by_distance(client, auth):
     assert b"nearest first" in response.data
 
 
+def create_recent_reports(client, app, count):
+    for index in range(count):
+        client.post(
+            "/reports/new",
+            data=report_payload(
+                name=f"Recent Shop {index}",
+                proof=(io.BytesIO(b"image bytes"), f"proof{index}.jpg", "image/jpeg"),
+            ),
+            content_type="multipart/form-data",
+        )
+    with app.app_context():
+        for index, report in enumerate(ShopReport.query.order_by(ShopReport.id).all()):
+            report.created_at = datetime(2026, 1, index + 1, tzinfo=timezone.utc)
+        db.session.commit()
+
+
+def test_home_lists_one_batch_of_recent_reports(client, auth, app):
+    auth.signup()
+    create_recent_reports(client, app, 3)
+
+    app.config["HOME_RECENT_REPORTS_COUNT"] = 2
+    response = client.get("/")
+    assert b"Recent reports" in response.data
+    assert b"Recent Shop 2" in response.data
+    assert b"Recent Shop 1" in response.data
+    assert b"Recent Shop 0" not in response.data
+    assert b"Keep scrolling to load more" in response.data
+    assert b"data-report-more" in response.data
+
+    searched = client.get("/?q=Recent+Shop+0")
+    assert b"Recent Shop 0" in searched.data
+    assert b"Reports near you" in searched.data
+    assert b"data-report-more" not in searched.data
+
+
+def test_home_load_more_link_keeps_the_reports_already_listed(client, auth, app):
+    auth.signup()
+    create_recent_reports(client, app, 3)
+
+    app.config["HOME_RECENT_REPORTS_COUNT"] = 2
+    response = client.get("/?offset=2")
+    assert b"Recent Shop 2" in response.data
+    assert b"Recent Shop 1" in response.data
+    assert b"Recent Shop 0" in response.data
+    assert b"Showing every report, newest first." in response.data
+    assert b"data-report-more" not in response.data
+
+
+def test_report_batch_endpoint_returns_the_next_cards(client, auth, app):
+    auth.signup()
+    create_recent_reports(client, app, 3)
+
+    app.config["HOME_RECENT_REPORTS_COUNT"] = 2
+    first = client.get("/api/reports/page?offset=0").get_json()
+    assert first["has_more"] is True
+    assert first["next_offset"] == 2
+    assert first["html"].count('<article class="report-card">') == 2
+    assert "Recent Shop 2" in first["html"]
+    assert "Recent Shop 0" not in first["html"]
+
+    second = client.get("/api/reports/page?offset=2").get_json()
+    assert second["has_more"] is False
+    assert second["next_offset"] == 3
+    assert "Recent Shop 0" in second["html"]
+
+    assert client.get("/api/reports/page?offset=not-a-number").get_json() == first
+
+
+def png_upload_bytes(size=(1600, 1200)):
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", size, (32, 96, 64)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def test_media_thumbnail_is_downscaled_cached_and_reused(client, auth, app):
+    from PIL import Image
+
+    original = png_upload_bytes()
+    auth.signup()
+    client.post(
+        "/reports/new",
+        data=report_payload(proof=(io.BytesIO(original), "evidence.png", "image/png")),
+        content_type="multipart/form-data",
+    )
+    with app.app_context():
+        media_id = ShopReport.query.first().media[0].id
+        thumbnail_folder = Path(app.config["THUMBNAIL_FOLDER"])
+
+    response = client.get(f"/media/{media_id}/thumbnail")
+    assert response.status_code == 200
+    assert response.mimetype == "image/webp"
+    assert len(response.data) < len(original)
+    assert "immutable" in response.headers["Cache-Control"]
+    with Image.open(io.BytesIO(response.data)) as thumbnail:
+        assert max(thumbnail.size) <= 720
+        assert thumbnail.size == (720, 540)
+
+    cached = list(thumbnail_folder.glob("*.webp"))
+    assert len(cached) == 1
+    # A second request is served from the cache instead of being generated again.
+    cached[0].write_bytes(b"cached-thumbnail-marker")
+    repeated = client.get(f"/media/{media_id}/thumbnail")
+    assert repeated.data == b"cached-thumbnail-marker"
+    assert len(list(thumbnail_folder.glob("*.webp"))) == 1
+
+    assert client.get(f"/media/{media_id}").mimetype == "image/png"
+
+
+def test_media_thumbnail_falls_back_to_the_original_upload(client, auth, app):
+    auth.signup()
+    client.post("/reports/new", data=report_payload(), content_type="multipart/form-data")
+    with app.app_context():
+        media_id = ShopReport.query.first().media[0].id
+
+    # The stored file is not a decodable image, so the route serves the upload.
+    response = client.get(f"/media/{media_id}/thumbnail")
+    assert response.status_code == 200
+    assert response.mimetype == "image/jpeg"
+    assert response.data == b"fake image bytes"
+
+
+def test_deleting_a_report_removes_its_cached_thumbnail(client, auth, app):
+    auth.signup("admin@example.com", "password123", username="admin")
+    app.config["ADMIN_EMAIL"] = "admin@example.com"
+    client.post(
+        "/reports/new",
+        data=report_payload(
+            proof=(io.BytesIO(png_upload_bytes((400, 300))), "evidence.png", "image/png")
+        ),
+        content_type="multipart/form-data",
+    )
+    with app.app_context():
+        report = ShopReport.query.first()
+        media_id, report_guid = report.media[0].id, report.guid
+        thumbnail_folder = Path(app.config["THUMBNAIL_FOLDER"])
+
+    client.get(f"/media/{media_id}/thumbnail")
+    assert len(list(thumbnail_folder.glob("*.webp"))) == 1
+
+    client.post(f"/admin/reports/{report_guid}/delete", follow_redirects=True)
+    assert list(thumbnail_folder.glob("*.webp")) == []
+
+
 def test_invalid_social_url_and_file_are_rejected(client, auth, app):
     auth.signup()
     data = report_payload(
@@ -1582,6 +1727,7 @@ def admin_password_app(tmp_path, database_path, **overrides):
         "SQLALCHEMY_DATABASE_URI": f"sqlite:///{database_path}",
         "UPLOAD_FOLDER": str(tmp_path / "uploads"),
         "LINK_PREVIEW_FOLDER": str(tmp_path / "link-previews"),
+        "THUMBNAIL_FOLDER": str(tmp_path / "thumbnails"),
         "SECRET_KEY": "test-secret",
         "TURNSTILE_SITE_KEY": "",
         "TURNSTILE_SECRET_KEY": "",

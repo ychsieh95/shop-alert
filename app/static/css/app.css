@@ -177,6 +177,12 @@ img, video { max-width: 100%; }
 .excerpt { min-height: 66px; margin: 14px 0 16px; color: #4e625f; font-size: 13px; }
 .card-link { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid #e2e2da; font-size: 12px; font-weight: 700; }
 .card-link span { color: var(--coral-dark); font-size: 18px; }
+.report-more { margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.report-more-status { min-height: 20px; margin: 0; color: var(--muted); font-size: 13px; text-align: center; }
+.report-more[data-loading] .button { opacity: .55; pointer-events: none; }
+.report-more-spinner { width: 15px; height: 15px; margin-right: 8px; display: inline-block; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: report-more-spin .7s linear infinite; }
+@keyframes report-more-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .report-more-spinner { animation-duration: 2.4s; } }
 .empty-state { margin-top: 30px; padding: 70px 20px; border: 1px dashed #bcc7c2; border-radius: 17px; text-align: center; background: rgba(255,255,255,.4); }
 .empty-icon { width: 62px; height: 62px; margin: auto; display: grid; place-items: center; border-radius: 50%; background: var(--mint); font: 700 26px Georgia; }
 .empty-state h3 { margin: 18px 0 4px; font: 700 24px Manrope; }.empty-state p { margin: 0 auto 22px; color: var(--muted); }

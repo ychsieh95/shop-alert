@@ -38,6 +38,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     upload_dir = Path(app.instance_path) / "uploads"
     link_preview_dir = Path(app.instance_path) / "link_previews"
+    thumbnail_dir = Path(app.instance_path) / "thumbnails"
     app.config.from_mapping(
         SECRET_KEY=os.getenv("SECRET_KEY", "dev-only-change-me"),
         SQLALCHEMY_DATABASE_URI=os.getenv("DATABASE_URL", "sqlite:///shop_alert.db"),
@@ -45,6 +46,7 @@ def create_app(test_config: dict | None = None) -> Flask:
         MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH_MB", "50")) * 1024 * 1024,
         UPLOAD_FOLDER=str(upload_dir),
         LINK_PREVIEW_FOLDER=str(link_preview_dir),
+        THUMBNAIL_FOLDER=str(thumbnail_dir),
         LINK_PREVIEW_TIMEOUT_SECONDS=int(
             os.getenv("LINK_PREVIEW_TIMEOUT_SECONDS", "15")
         ),
@@ -68,6 +70,7 @@ def create_app(test_config: dict | None = None) -> Flask:
         CLOUDFLARE_URL_SCANNER_CACHE_HOURS=int(
             os.getenv("CLOUDFLARE_URL_SCANNER_CACHE_HOURS", "24")
         ),
+        HOME_RECENT_REPORTS_COUNT=int(os.getenv("HOME_RECENT_REPORTS_COUNT", "9")),
         GOOGLE_MAPS_API_KEY=os.getenv("GOOGLE_MAPS_API_KEY", ""),
         ADMIN_EMAIL=os.getenv("ADMIN_EMAIL", "").strip().lower(),
         ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD", ""),
@@ -103,6 +106,8 @@ def create_app(test_config: dict | None = None) -> Flask:
         or int(app.config["LINK_PREVIEW_CACHE_HOURS"]) < 1
     ):
         raise RuntimeError("Link preview timing and cache settings are invalid.")
+    if int(app.config["HOME_RECENT_REPORTS_COUNT"]) < 1:
+        raise RuntimeError("HOME_RECENT_REPORTS_COUNT must be a positive integer.")
     if bool(app.config["TURNSTILE_SITE_KEY"]) != bool(
         app.config["TURNSTILE_SECRET_KEY"]
     ):
@@ -139,6 +144,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
     Path(app.config["LINK_PREVIEW_FOLDER"]).mkdir(parents=True, exist_ok=True)
+    Path(app.config["THUMBNAIL_FOLDER"]).mkdir(parents=True, exist_ok=True)
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)

@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-08-17",
+    "date_label": {
+      "en-US": "August 17, 2026",
+      "zh-TW": "2026 年 8 月 17 日"
+    },
+    "title": {
+      "en-US": "A faster home page: recent reports, scroll loading, and lighter images",
+      "zh-TW": "更快的首頁：最新紀錄、捲動載入與更輕量的圖片"
+    },
+    "summary": {
+      "en-US": "The home page now opens with the most recent community reports instead of the entire record, loads further reports automatically as the page is scrolled, and shows small cached cover images rather than full-size uploads.",
+      "zh-TW": "首頁改為先呈現社群最新的紀錄，而非一次列出全部內容；捲動頁面時會自動載入後續紀錄，封面圖片也改用快取的小尺寸圖片，不再載入原始檔案。"
+    },
+    "items": {
+      "en-US": [
+        "The home page opens on the newest reports under a Recent reports heading instead of rendering the whole community record at once.",
+        "Scrolling toward the end of the list loads the next reports in place, for the recent view as well as for keyword and nearby results.",
+        "A Load more reports button remains available and still works without JavaScript, where it reloads the page with the reports already listed plus the next batch.",
+        "Added the HOME_RECENT_REPORTS_COUNT setting, which controls how many reports each batch contains and defaults to 9.",
+        "Report cards, the My reports list, the evidence thumbnail rail, and the edit form now load a small cached copy of each image instead of the full-size upload, which cut the cover images on a sample home page by about 86 percent.",
+        "Thumbnails are generated once on first request, reused afterwards, removed together with their report, and replaced by the original file whenever an image cannot be processed."
+      ],
+      "zh-TW": [
+        "首頁改以「最新紀錄」標題呈現最新的紀錄，不再一次顯示全部社群紀錄。",
+        "捲動至列表尾端時會就地載入後續紀錄，最新紀錄、關鍵字搜尋與附近搜尋皆適用。",
+        "仍保留「載入更多紀錄」按鈕；未啟用 JavaScript 時，該按鈕會重新載入頁面並一併顯示已列出的紀錄與下一批紀錄。",
+        "新增 HOME_RECENT_REPORTS_COUNT 設定，可調整每批載入的紀錄數量，預設為 9。",
+        "紀錄卡片、「我的紀錄」列表、證據縮圖列與編輯表單改為載入快取的小尺寸圖片，不再載入原始上傳檔案；以首頁範例計算，封面圖片的載入量減少約 86%。",
+        "縮圖只在首次請求時產生，之後直接重複使用，並會隨紀錄一併刪除；若圖片無法處理，則改為提供原始檔案。"
+      ]
+    }
+  },
+  {
     "date": "2026-08-16",
     "date_label": {
       "en-US": "August 16, 2026",

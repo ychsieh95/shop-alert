@@ -98,7 +98,7 @@
                   aria-pressed="{{ 'true' if loop.first else 'false' }}"
                 >
                   {% if media.media_type == 'image' %}
-                    <img src="{{ url_for('main.proof_media', media_id=media.id) }}" alt="" loading="lazy">
+                    <img src="{{ url_for('main.proof_thumbnail', media_id=media.id) }}" alt="" loading="lazy" decoding="async">
                   {% else %}
                     <video src="{{ url_for('main.proof_media', media_id=media.id) }}" preload="metadata" muted playsinline></video>
                     <span class="evidence-gallery-play" aria-hidden="true">

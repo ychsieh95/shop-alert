@@ -22,7 +22,7 @@
             <a class="my-report-cover" href="{{ url_for('main.report_detail', report_guid=report.guid) }}">
               {% set cover = report.media[0] %}
               {% if cover.media_type == 'image' %}
-                <img src="{{ url_for('main.proof_media', media_id=cover.id) }}" alt="" loading="lazy">
+                <img src="{{ url_for('main.proof_thumbnail', media_id=cover.id) }}" alt="" loading="lazy" decoding="async">
               {% else %}
                 <video src="{{ url_for('main.proof_media', media_id=cover.id) }}#t=0.1" muted preload="metadata" playsinline></video>
                 <span class="video-icon">▶</span>

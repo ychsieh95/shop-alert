@@ -13,6 +13,7 @@ def app(tmp_path):
             "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
             "UPLOAD_FOLDER": str(tmp_path / "uploads"),
             "LINK_PREVIEW_FOLDER": str(tmp_path / "link-previews"),
+            "THUMBNAIL_FOLDER": str(tmp_path / "thumbnails"),
             "SECRET_KEY": "test-secret",
             "ADMIN_EMAIL": "",
             "ADMIN_PASSWORD": "",
