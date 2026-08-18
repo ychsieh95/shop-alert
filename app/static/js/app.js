@@ -13,11 +13,27 @@
     window.scrollTo(0, position);
     document.documentElement.style.scrollBehavior = previousBehavior;
   };
-  const saveScrollPosition = () => {
+  const preserveScrollForms = [...document.querySelectorAll('[data-preserve-scroll]')];
+  // Identified by action plus position among the forms posting to that action,
+  // so another form appearing or disappearing cannot shift the match.
+  const preserveScrollAnchorKey = (form) => {
+    const action = form.getAttribute('action') || window.location.pathname;
+    const sameAction = preserveScrollForms.filter(
+      (item) => (item.getAttribute('action') || window.location.pathname) === action,
+    );
+    return `${action}#${sameAction.indexOf(form)}`;
+  };
+  // A translated page is not the same height, so the pixel offset alone would
+  // drop the visitor somewhere else. The form they submitted is recorded as an
+  // anchor and put back at the same place in the viewport.
+  const saveScrollPosition = (anchor) => {
+    const anchored = preserveScrollForms.includes(anchor);
     try {
       sessionStorage.setItem(preservedScrollKey, JSON.stringify({
         path: window.location.pathname,
         position: window.scrollY,
+        anchorKey: anchored ? preserveScrollAnchorKey(anchor) : '',
+        anchorTop: anchored ? Math.round(anchor.getBoundingClientRect().top) : null,
         savedAt: Date.now(),
       }));
     } catch (_error) {}
@@ -52,7 +68,7 @@
         if (typeof preferenceLocale.form.requestSubmit === 'function') {
           preferenceLocale.form.requestSubmit();
         } else {
-          saveScrollPosition();
+          saveScrollPosition(preferenceLocale.form);
           preferenceLocale.form.submit();
         }
       }
@@ -80,8 +96,8 @@
   applyTheme(savedTheme);
   document.documentElement.dataset.colorTheme = savedColorTheme;
 
-  document.querySelectorAll('[data-preserve-scroll]').forEach((form) => {
-    form.addEventListener('submit', saveScrollPosition);
+  preserveScrollForms.forEach((form) => {
+    form.addEventListener('submit', () => saveScrollPosition(form));
   });
 
   const passwordChangeForm = document.querySelector('[data-password-change-form]');
@@ -219,9 +235,19 @@
       && savedScroll.path === window.location.pathname
       && Number.isFinite(savedScroll.position)
       && Date.now() - savedScroll.savedAt < 120000) {
+      const anchor = savedScroll.anchorKey
+        ? preserveScrollForms.find((form) => preserveScrollAnchorKey(form) === savedScroll.anchorKey)
+        : null;
       const previousRestoration = history.scrollRestoration;
       history.scrollRestoration = 'manual';
-      const restoreScrollPosition = () => setScrollPositionInstantly(savedScroll.position);
+      const restoreScrollPosition = () => {
+        if (anchor && Number.isFinite(savedScroll.anchorTop)) {
+          const drift = anchor.getBoundingClientRect().top - savedScroll.anchorTop;
+          setScrollPositionInstantly(window.scrollY + drift);
+        } else {
+          setScrollPositionInstantly(savedScroll.position);
+        }
+      };
       restoreScrollPosition();
       requestAnimationFrame(() => requestAnimationFrame(restoreScrollPosition));
       window.addEventListener('load', () => {
@@ -358,6 +384,16 @@
           fallback.searchParams.set('offset', String(nextOffset));
           moreLink.href = fallback.toString();
         }
+        // Reloading after a preference change must render the batches already
+        // on screen, otherwise the page shrinks and the restored position is
+        // meaningless.
+        preserveScrollForms.forEach((form) => {
+          const destination = form.querySelector('input[name="next"]');
+          if (!destination) return;
+          const target = new URL(destination.value || window.location.pathname, window.location.origin);
+          target.searchParams.set('offset', String(nextOffset));
+          destination.value = `${target.pathname}${target.search}`;
+        });
         setMoreStatus('', false);
         if (!payload.has_more || !added) {
           finished = true;
@@ -691,6 +727,14 @@
       selectedFiles.forEach(({ file }) => transfer.items.add(file));
       fileInput.files = transfer.files;
     };
+    const removeFile = (selectedFile) => {
+      const index = selectedFiles.indexOf(selectedFile);
+      if (index < 0) return;
+      selectedFiles.splice(index, 1);
+      if (selectedFile.previewUrl) URL.revokeObjectURL(selectedFile.previewUrl);
+      syncFileInput();
+      renderFiles();
+    };
     const renderFiles = () => {
       previews.replaceChildren();
       selectedFiles.forEach((selectedFile) => {
@@ -717,6 +761,14 @@
           image.alt = '';
           preview.append(image);
         }
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'upload-file-remove';
+        removeButton.textContent = '×';
+        removeButton.title = i18n.removeFile || 'Remove file';
+        removeButton.setAttribute('aria-label', `${i18n.removeFile || 'Remove file'}: ${file.name}`);
+        removeButton.addEventListener('click', () => removeFile(selectedFile));
+        preview.append(removeButton);
         const details = document.createElement('div');
         details.className = 'upload-file-details';
         const meta = document.createElement('div');
@@ -762,6 +814,180 @@
       appendFiles(event.dataTransfer?.files || []);
     });
   }
+
+  document.querySelectorAll('[data-related-shop-editor]').forEach((relatedShopEditor) => {
+    const list = relatedShopEditor.querySelector('[data-related-shop-list]');
+    const searchInput = relatedShopEditor.querySelector('[data-related-shop-search]');
+    const results = relatedShopEditor.querySelector('[data-related-shop-results]');
+    const status = relatedShopEditor.querySelector('[data-related-shop-status]');
+    const manualName = relatedShopEditor.querySelector('[data-related-shop-manual-name]');
+    const manualAddress = relatedShopEditor.querySelector('[data-related-shop-manual-address]');
+    const manualAdd = relatedShopEditor.querySelector('[data-related-shop-manual-add]');
+    if (!list || !searchInput || !results || !status || !manualName || !manualAddress || !manualAdd) return;
+
+    const data = relatedShopEditor.dataset;
+    const limit = Number(data.relatedShopLimit) || 10;
+    let entries = [];
+    try {
+      entries = JSON.parse(data.relatedShopEntries || '[]');
+    } catch (error) {
+      entries = [];
+    }
+
+    const entryKey = (entry) => (entry.guid
+      ? `report:${entry.guid}`
+      : `shop:${(entry.name || '').toLowerCase()}|${(entry.address || '').toLowerCase()}`);
+    const entryLabel = (entry) => {
+      const source = entry.guid ? data.reportedLabel : data.manualLabel;
+      const detail = entry.address || (entry.is_online ? data.onlineLabel : '');
+      return detail ? `${source} · ${detail}` : source;
+    };
+    const hiddenInput = (name, value) => {
+      const field = document.createElement('input');
+      field.type = 'hidden';
+      field.name = name;
+      field.value = value || '';
+      return field;
+    };
+    const render = () => {
+      list.replaceChildren();
+      entries.forEach((entry, index) => {
+        const item = document.createElement('li');
+        item.className = 'related-shop-item';
+        const copy = document.createElement('span');
+        copy.className = 'related-shop-copy';
+        const name = document.createElement('strong');
+        name.textContent = entry.name;
+        const label = document.createElement('small');
+        label.textContent = entryLabel(entry);
+        copy.append(name, label);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'related-shop-remove';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', `${data.relatedShopRemoveLabel}: ${entry.name}`);
+        remove.addEventListener('click', () => {
+          entries.splice(index, 1);
+          status.textContent = '';
+          render();
+        });
+        item.append(
+          hiddenInput('related_shop_guid', entry.guid),
+          hiddenInput('related_shop_name', entry.guid ? '' : entry.name),
+          hiddenInput('related_shop_address', entry.guid ? '' : entry.address),
+          copy,
+          remove,
+        );
+        list.append(item);
+      });
+    };
+    const addEntry = (entry) => {
+      if (entries.length >= limit) {
+        status.textContent = data.relatedShopLimitMessage;
+        return false;
+      }
+      if (entries.some((existing) => entryKey(existing) === entryKey(entry))) {
+        status.textContent = data.relatedShopDuplicateMessage;
+        return false;
+      }
+      entries.push(entry);
+      status.textContent = '';
+      render();
+      return true;
+    };
+
+    let searchTimer;
+    let searchRequest;
+    const renderResults = (reports) => {
+      results.replaceChildren();
+      results.hidden = !reports.length;
+      reports.forEach((report) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'related-shop-result';
+        const name = document.createElement('strong');
+        name.textContent = report.name;
+        const detail = document.createElement('small');
+        detail.textContent = report.is_online ? data.onlineLabel : report.address;
+        const arrow = document.createElement('span');
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '+';
+        option.append(name, detail, arrow);
+        option.addEventListener('click', () => {
+          if (!addEntry({
+            guid: report.guid,
+            name: report.name,
+            address: report.address,
+            is_online: report.is_online,
+          })) return;
+          searchInput.value = '';
+          renderResults([]);
+        });
+        results.append(option);
+      });
+    };
+    const searchReports = async () => {
+      const term = searchInput.value.trim();
+      if (term.length < 2) {
+        searchRequest?.abort();
+        renderResults([]);
+        status.textContent = '';
+        return;
+      }
+      searchRequest?.abort();
+      searchRequest = new AbortController();
+      status.textContent = data.relatedShopLoadingMessage;
+      const url = new URL(data.relatedShopSearchUrl, window.location.origin);
+      url.searchParams.set('q', term);
+      if (data.relatedShopExcludeGuid) url.searchParams.set('exclude', data.relatedShopExcludeGuid);
+      try {
+        const response = await fetch(url, {
+          headers: { Accept: 'application/json' },
+          signal: searchRequest.signal,
+        });
+        if (!response.ok) throw new Error('Related-shop search failed');
+        const payload = await response.json();
+        const reports = payload.reports || [];
+        renderResults(reports);
+        status.textContent = reports.length ? '' : data.relatedShopEmptyMessage;
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        renderResults([]);
+        status.textContent = data.relatedShopErrorMessage;
+      }
+    };
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(searchReports, 350);
+    });
+    searchInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      clearTimeout(searchTimer);
+      searchReports();
+    });
+    const addManualEntry = () => {
+      const name = manualName.value.trim();
+      const address = manualAddress.value.trim();
+      if ([...name].length < 2 || [...name].length > 180) {
+        status.textContent = data.relatedShopNameMessage;
+        manualName.focus();
+        return;
+      }
+      if (!addEntry({ guid: '', name, address, is_online: false })) return;
+      manualName.value = '';
+      manualAddress.value = '';
+      manualName.focus();
+    };
+    manualAdd.addEventListener('click', addManualEntry);
+    [manualName, manualAddress].forEach((field) => field.addEventListener('keydown', (event) => {
+      if (event.isComposing || event.keyCode === 229 || event.key !== 'Enter') return;
+      event.preventDefault();
+      addManualEntry();
+    }));
+    render();
+  });
 
   const formProgress = document.querySelector('[data-form-progress]');
   if (formProgress) {

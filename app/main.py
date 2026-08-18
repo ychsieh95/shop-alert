@@ -77,6 +77,10 @@ DEFAULT_HASHTAG_SUGGESTIONS = {
     "zh-TW": ("服務", "價格", "退款", "品質", "配送", "客服"),
 }
 MAX_POPULAR_HASHTAGS = 6
+MAX_RELATED_SHOPS = 10
+MAX_RELATED_SHOP_NAME_LENGTH = 180
+MAX_RELATED_SHOP_ADDRESS_LENGTH = 500
+MAX_RELATED_SHOP_RESULTS = 8
 MAX_MEDIA_NAME_LENGTH = 255
 # Batches a single home-page render may contain, and the furthest batch the
 # scroll-loading endpoint will start from.
@@ -215,6 +219,108 @@ def _validate_hashtags(hashtags: list[str]) -> list[str]:
     ):
         errors.append("Use 1 to 30 letters, numbers, or underscores per hashtag.")
     return errors
+
+
+def _parse_related_shops(form) -> list[dict[str, str]]:
+    """Read the parallel related-shop form fields into ordered, unique entries."""
+
+    guids = form.getlist("related_shop_guid")
+    names = form.getlist("related_shop_name")
+    addresses = form.getlist("related_shop_address")
+    entries: list[dict[str, str]] = []
+    seen = set()
+    for index in range(max(len(guids), len(names), len(addresses), 0)):
+        guid = guids[index].strip()[:36] if index < len(guids) else ""
+        name = names[index].strip() if index < len(names) else ""
+        address = addresses[index].strip() if index < len(addresses) else ""
+        if guid:
+            key = ("report", guid)
+            entry = {"guid": guid, "name": "", "address": ""}
+        elif name:
+            key = ("shop", name.casefold(), address.casefold())
+            entry = {"guid": "", "name": name, "address": address}
+        else:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        entries.append(entry)
+    return entries
+
+
+def _validate_related_shops(
+    entries: list[dict[str, str]], current_report: ShopReport | None = None
+) -> list[str]:
+    errors = []
+    if len(entries) > MAX_RELATED_SHOPS:
+        errors.append("Add no more than 10 related shops.")
+    guids = {entry["guid"] for entry in entries if entry["guid"]}
+    if current_report is not None and current_report.guid in guids:
+        errors.append("A report cannot be listed as its own related shop.")
+        guids.discard(current_report.guid)
+    if guids:
+        known = {
+            guid
+            for (guid,) in ShopReport.query.filter(
+                ShopReport.guid.in_(guids), ShopReport.archived_at.is_(None)
+            ).with_entities(ShopReport.guid)
+        }
+        if known != guids:
+            errors.append("A selected related shop report could not be found.")
+    manual = [entry for entry in entries if not entry["guid"]]
+    if any(
+        not 2 <= len(entry["name"]) <= MAX_RELATED_SHOP_NAME_LENGTH for entry in manual
+    ):
+        errors.append("Related shop names must be between 2 and 180 characters.")
+    if any(
+        len(entry["address"]) > MAX_RELATED_SHOP_ADDRESS_LENGTH for entry in manual
+    ):
+        errors.append("Related shop addresses must be 500 characters or fewer.")
+    return errors
+
+
+def _related_shop_details(
+    entries: list[dict[str, str]], locale: str
+) -> list[dict[str, object]]:
+    """Resolve stored entries into display rows, dropping unavailable reports."""
+
+    guids = [entry["guid"] for entry in entries if entry["guid"]]
+    linked = {}
+    if guids:
+        linked = {
+            report.guid: report
+            for report in ShopReport.query.filter(
+                ShopReport.guid.in_(set(guids)), ShopReport.archived_at.is_(None)
+            )
+        }
+    details = []
+    for entry in entries:
+        if entry["guid"]:
+            report = linked.get(entry["guid"])
+            if report is None:
+                continue
+            details.append(
+                {
+                    "guid": report.guid,
+                    "name": report.name,
+                    "address": ""
+                    if report.is_online
+                    else report.localized_address(locale),
+                    "is_online": report.is_online,
+                    "url": url_for("main.report_detail", report_guid=report.guid),
+                }
+            )
+        else:
+            details.append(
+                {
+                    "guid": "",
+                    "name": entry["name"],
+                    "address": entry["address"],
+                    "is_online": False,
+                    "url": "",
+                }
+            )
+    return details
 
 
 def _hashtag_suggestions(locale: str) -> tuple[list[str], list[str]]:
@@ -669,9 +775,51 @@ def similar_reports():
     )
 
 
+@main_bp.get("/api/reports/search")
+@login_required
+def search_reports():
+    """Name/address lookup that powers the related-shop picker."""
+
+    term = request.args.get("q", "").strip()[:180]
+    exclude_guid = request.args.get("exclude", "").strip()[:36]
+    if len(term) < 2:
+        return jsonify({"reports": []})
+
+    pattern = f"%{term}%"
+    query = ShopReport.query.filter(ShopReport.archived_at.is_(None)).filter(
+        or_(
+            ShopReport.name.ilike(pattern),
+            ShopReport.address.ilike(pattern),
+            ShopReport.address_en_us.ilike(pattern),
+            ShopReport.address_zh_tw.ilike(pattern),
+        )
+    )
+    if exclude_guid:
+        query = query.filter(ShopReport.guid != exclude_guid)
+
+    locale = get_locale()
+    return jsonify(
+        {
+            "reports": [
+                {
+                    "guid": report.guid,
+                    "name": report.name,
+                    "address": "" if report.is_online else report.localized_address(locale),
+                    "is_online": report.is_online,
+                    "url": url_for("main.report_detail", report_guid=report.guid),
+                }
+                for report in query.order_by(ShopReport.created_at.desc()).limit(
+                    MAX_RELATED_SHOP_RESULTS
+                )
+            ]
+        }
+    )
+
+
 @main_bp.route("/reports/new", methods=["GET", "POST"])
 @login_required
 def create_report():
+    related_shops: list[dict[str, str]] = []
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         is_online = request.form.get("is_online") == "1"
@@ -691,6 +839,7 @@ def create_report():
         controversy_links = _parse_controversy_links(
             request.form.get("controversy_links", "")
         )
+        related_shops = _parse_related_shops(request.form)
         latitude = None if is_online else _float_between(request.form.get("latitude", ""), -90, 90)
         longitude = None if is_online else _float_between(request.form.get("longitude", ""), -180, 180)
         uploads = [file for file in request.files.getlist("proof") if file.filename]
@@ -715,6 +864,7 @@ def create_report():
             errors.append("Report details must be between 20 and 5,000 characters.")
         errors.extend(_validate_hashtags(hashtags))
         errors.extend(_validate_controversy_links(controversy_links))
+        errors.extend(_validate_related_shops(related_shops))
         if not uploads:
             errors.append("Add at least one image or video as supporting evidence.")
         invalid_links = [SOCIAL_FIELDS[key] for key, value in links.items() if not _valid_url(value)]
@@ -766,6 +916,7 @@ def create_report():
             report.social_links = links
             report.hashtags = hashtags
             report.controversy_links = controversy_links
+            report.related_shops = related_shops
             db.session.add(report)
             saved_paths = []
             try:
@@ -797,11 +948,13 @@ def create_report():
         for error in errors:
             flash(error, "error")
 
-    popular_hashtags, suggested_hashtags = _hashtag_suggestions(get_locale())
+    locale = get_locale()
+    popular_hashtags, suggested_hashtags = _hashtag_suggestions(locale)
     return render_template(
         "reports/new.html",
         report=None,
         edit_mode=False,
+        related_shops=_related_shop_details(related_shops, locale),
         social_fields=SOCIAL_FIELDS,
         popular_hashtags=popular_hashtags,
         suggested_hashtags=suggested_hashtags,
@@ -813,7 +966,10 @@ def create_report():
 def report_detail(report_guid):
     report = _report_by_guid_or_404(report_guid)
     return render_template(
-        "reports/detail.html", report=report, contact_reasons=CONTACT_REASONS
+        "reports/detail.html",
+        report=report,
+        related_shops=_related_shop_details(report.related_shops, get_locale()),
+        contact_reasons=CONTACT_REASONS,
     )
 
 
@@ -1023,6 +1179,7 @@ def edit_report(report_guid):
     if report.archived_at is not None:
         abort(403)
 
+    related_shops = report.related_shops
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         is_online = request.form.get("is_online") == "1"
@@ -1042,6 +1199,7 @@ def edit_report(report_guid):
         controversy_links = _parse_controversy_links(
             request.form.get("controversy_links", "")
         )
+        related_shops = _parse_related_shops(request.form)
         latitude = (
             None
             if is_online
@@ -1082,6 +1240,7 @@ def edit_report(report_guid):
             errors.append("Report details must be between 20 and 5,000 characters.")
         errors.extend(_validate_hashtags(hashtags))
         errors.extend(_validate_controversy_links(controversy_links))
+        errors.extend(_validate_related_shops(related_shops, report))
         invalid_links = [
             SOCIAL_FIELDS[key] for key, value in links.items() if not _valid_url(value)
         ]
@@ -1148,6 +1307,7 @@ def edit_report(report_guid):
             report.controversy = controversy
             report.hashtags = hashtags
             report.controversy_links = controversy_links
+            report.related_shops = related_shops
             report.social_links = links
             report.updated_at = utcnow()
             for media in media_to_keep:
@@ -1193,11 +1353,13 @@ def edit_report(report_guid):
         for error in errors:
             flash(error, "error")
 
-    popular_hashtags, suggested_hashtags = _hashtag_suggestions(get_locale())
+    locale = get_locale()
+    popular_hashtags, suggested_hashtags = _hashtag_suggestions(locale)
     return render_template(
         "reports/new.html",
         report=report,
         edit_mode=True,
+        related_shops=_related_shop_details(related_shops, locale),
         social_fields=SOCIAL_FIELDS,
         popular_hashtags=popular_hashtags,
         suggested_hashtags=suggested_hashtags,

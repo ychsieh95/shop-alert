@@ -18,7 +18,7 @@
     {% else %}
       <p class="address"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>{{ report.localized_address(locale) }}</p>
     {% endif %}
-    <p class="excerpt">{{ report.controversy|normalize_line_breaks|truncate(145) }}</p>
+    <p class="excerpt">{{ report.controversy|normalize_line_breaks|truncate(180) }}</p>
     {% if report.hashtags %}
       <nav class="hashtag-list hashtag-list-card" aria-label="{{ t('Hashtags') }}">
         {% for hashtag in report.hashtags %}<a class="hashtag-chip" href="{{ url_for('main.home', q=hashtag) }}#reports">#{{ hashtag }}</a>{% endfor %}

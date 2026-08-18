@@ -80,6 +80,7 @@ class ShopReport(db.Model):
     controversy = db.Column(db.Text, nullable=False)
     hashtags_json = db.Column(db.Text, default="[]", nullable=False)
     controversy_links_json = db.Column(db.Text, default="[]", nullable=False)
+    related_shops_json = db.Column(db.Text, default="[]", nullable=False)
     social_links_json = db.Column(db.Text, default="{}", nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow, nullable=False, index=True)
     updated_at = db.Column(
@@ -150,6 +151,39 @@ class ShopReport(db.Model):
     @controversy_links.setter
     def controversy_links(self, links: list[str]) -> None:
         self.controversy_links_json = json.dumps(links, ensure_ascii=False)
+
+    @property
+    def related_shops(self) -> list[dict[str, str]]:
+        """Linked shops, either a report GUID or a manually typed shop."""
+
+        try:
+            entries = json.loads(self.related_shops_json)
+        except (TypeError, json.JSONDecodeError):
+            return []
+        if not isinstance(entries, list):
+            return []
+        related = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            guid = entry.get("guid")
+            name = entry.get("name")
+            address = entry.get("address")
+            if isinstance(guid, str) and guid:
+                related.append({"guid": guid, "name": "", "address": ""})
+            elif isinstance(name, str) and name:
+                related.append(
+                    {
+                        "guid": "",
+                        "name": name,
+                        "address": address if isinstance(address, str) else "",
+                    }
+                )
+        return related
+
+    @related_shops.setter
+    def related_shops(self, entries: list[dict[str, str]]) -> None:
+        self.related_shops_json = json.dumps(entries, ensure_ascii=False)
 
 
 class ProofMedia(db.Model):

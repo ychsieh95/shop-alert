@@ -18,9 +18,11 @@ Important: reports are community-submitted allegations. A production deployment 
 - Optional Google Place Autocomplete that follows the selected interface language and fills editable name, localized address, coordinates, and Place ID fields
 - Required multi-file evidence upload with image and video support; repeated chooser and drag-and-drop selections append to the current list and render responsive pre-publish thumbnails
 - Cached WebP thumbnails generated on first request and served to report cards and gallery rails, so listings load a fraction of the original upload size
+- Report cards whose excerpt always occupies the same three lines, regardless of how long or short the report is, so every card in a row lines up
 - Up to 10 optional, searchable hashtags per report, with Enter/comma-to-label input, removable chips, popular tags, and locale-specific starter suggestions
 - Debounced similar-report detection while entering a shop name or location, with a live count in the checker icon and in-page modal previews that preserve the draft
 - Up to 10 optional controversy/source URLs per report, with SSRF checks, optional Cloudflare URL Scanner verdicts, a cached server screenshot, and confirmation before leaving ShopAlert
+- Up to 10 optional related shops per report, either linked to an existing ShopAlert report through a debounced search or typed manually for shops that are not on ShopAlert
 - Stable GUID identifiers in every public report URL, with redirects for legacy numeric links
 - A private “My reports” page where each user can review and edit only their own submissions
 - A profile page for changing the profile picture and password and reviewing the account’s reports
@@ -170,13 +172,19 @@ On report creation and editing, the shop-name/address fields trigger a 450-milli
 
 Similarity is an advisory prompt, not a uniqueness guarantee. A zero count means no report passed the current matching threshold; it does not prove that no related report exists under substantially different data.
 
+### Related shops
+
+The optional related-shops section accepts up to 10 entries per report. Typing at least two characters queries the authenticated `/api/reports/search` endpoint, which matches shop names and both localized addresses and returns up to eight non-archived reports; selecting one stores its GUID so the detail page always shows the linked report's current name and address. Shops that are not on ShopAlert can be typed in as a name (2–180 characters) and an optional address or public link (up to 500 characters).
+
+Entries are stored on the report itself, so a linked report that is later archived or deleted simply stops appearing instead of leaving a broken link. A report cannot list itself, and edit forms exclude the report being edited from search results.
+
 ## Tests
 
 ```bash
 pytest
 ```
 
-The test suite covers authentication throttling, Turnstile enforcement, access control, validation, report creation with evidence, hashtag behavior, similar-report ranking, detail/media delivery, keyword search, and nearby filtering. It also covers the Cloudflare URL Scanner client and the Docker deployment configuration.
+The test suite covers authentication throttling, Turnstile enforcement, access control, validation, report creation with evidence, hashtag behavior, related-shop linking, similar-report ranking, detail/media delivery, keyword search, and nearby filtering. It also covers the Cloudflare URL Scanner client and the Docker deployment configuration.
 
 ## Information and administration pages
 

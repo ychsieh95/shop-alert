@@ -122,6 +122,22 @@
           <a class="button button-outline button-full" href="https://www.google.com/maps/search/?api=1&query={{ report.latitude }},{{ report.longitude }}" target="_blank" rel="noopener">{{ t('View on map') }} ↗</a>
         {% endif %}
       </div>
+      {% if related_shops %}
+        <div class="sidebar-card">
+          <span class="sidebar-label">{{ t('Related shops') }}</span>
+          <ul class="related-shop-detail-list">
+            {% for related in related_shops %}
+              <li>
+                {% if related.guid %}
+                  <a href="{{ related.url }}"><strong>{{ related.name }}</strong><small>{% if related.is_online %}{{ t('Online shop') }}{% else %}{{ related.address }}{% endif %}</small><span aria-hidden="true">→</span></a>
+                {% else %}
+                  <span><strong>{{ related.name }}</strong><small>{{ related.address or t('Not reported on ShopAlert') }}</small></span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
       {% if report.social_links %}
         <div class="sidebar-card">
           <span class="sidebar-label">{{ t('Official profiles') }}</span>

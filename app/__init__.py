@@ -321,6 +321,14 @@ def create_app(test_config: dict | None = None) -> Flask:
                 )
             )
             db.session.commit()
+        if "related_shops_json" not in report_columns:
+            db.session.execute(
+                text(
+                    "ALTER TABLE shop_report ADD COLUMN "
+                    "related_shops_json TEXT NOT NULL DEFAULT '[]'"
+                )
+            )
+            db.session.commit()
         if "hashtags_json" not in report_columns:
             db.session.execute(
                 text(

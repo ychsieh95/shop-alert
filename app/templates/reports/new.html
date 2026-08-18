@@ -131,7 +131,57 @@
       </section>
 
       <section class="form-section">
-        <div class="form-section-heading"><span>04</span><div><h2>{{ t('Social links') }} <small>{{ t('Optional') }}</small></h2><p>{{ t('Add official shop profiles to help identify the correct business.') }}</p></div></div>
+        <div class="form-section-heading"><span>04</span><div><h2>{{ t('Related shops') }} <small>{{ t('Optional') }}</small></h2><p>{{ t('Link shops already reported on ShopAlert, or add ones that are not here yet.') }}</p></div></div>
+        <div class="related-shop-editor"
+             data-related-shop-editor
+             data-related-shop-limit="10"
+             data-related-shop-search-url="{{ url_for('main.search_reports') }}"
+             data-related-shop-exclude-guid="{{ report.guid if report else '' }}"
+             data-related-shop-entries='{{ related_shops|tojson }}'
+             data-related-shop-remove-label="{{ t('Remove related shop') }}"
+             data-related-shop-limit-message="{{ t('Add no more than 10 related shops.') }}"
+             data-related-shop-name-message="{{ t('Related shop names must be between 2 and 180 characters.') }}"
+             data-related-shop-duplicate-message="{{ t('That shop is already in the related shops list.') }}"
+             data-related-shop-loading-message="{{ t('Searching reported shops…') }}"
+             data-related-shop-empty-message="{{ t('No reported shop matched. You can add it manually below.') }}"
+             data-related-shop-error-message="{{ t('Could not search reports right now.') }}"
+             data-online-label="{{ t('Online shop') }}"
+             data-reported-label="{{ t('Reported on ShopAlert') }}"
+             data-manual-label="{{ t('Not reported on ShopAlert') }}">
+          <ul class="related-shop-list" data-related-shop-list>
+            {% for related in related_shops %}
+              <li class="related-shop-item">
+                <input type="hidden" name="related_shop_guid" value="{{ related.guid }}">
+                <input type="hidden" name="related_shop_name" value="{{ '' if related.guid else related.name }}">
+                <input type="hidden" name="related_shop_address" value="{{ '' if related.guid else related.address }}">
+                <span class="related-shop-copy">
+                  <strong>{{ related.name }}</strong>
+                  <small>{% if related.guid %}{{ t('Reported on ShopAlert') }}{% else %}{{ t('Not reported on ShopAlert') }}{% endif %}{% if related.address %} · {{ related.address }}{% elif related.is_online %} · {{ t('Online shop') }}{% endif %}</small>
+                </span>
+                <button type="button" class="related-shop-remove" data-related-shop-remove aria-label="{{ t('Remove related shop') }}: {{ related.name }}">×</button>
+              </li>
+            {% endfor %}
+          </ul>
+          <div class="related-shop-picker">
+            <label class="related-shop-search">{{ t('Search reported shops') }}
+              <input type="search" maxlength="180" autocomplete="off" placeholder="{{ t('Search by shop name or address') }}" aria-describedby="related-shop-status" data-related-shop-search>
+            </label>
+            <div class="related-shop-results" data-related-shop-results hidden></div>
+            <small class="related-shop-status" id="related-shop-status" data-related-shop-status aria-live="polite"></small>
+          </div>
+          <div class="related-shop-manual">
+            <span class="related-shop-manual-title">{{ t('Or add a shop that is not on ShopAlert') }}</span>
+            <div class="related-shop-manual-fields">
+              <label>{{ t('Shop name') }}<input type="text" maxlength="180" placeholder="{{ t('e.g. North Star Coffee') }}" data-related-shop-manual-name></label>
+              <label>{{ t('Address or link') }} <small>{{ t('Optional') }}</small><input type="text" maxlength="500" placeholder="{{ t('Street, city, or a public link') }}" data-related-shop-manual-address></label>
+              <button type="button" class="button button-outline" data-related-shop-manual-add>{{ t('Add related shop') }}</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <div class="form-section-heading"><span>05</span><div><h2>{{ t('Social links') }} <small>{{ t('Optional') }}</small></h2><p>{{ t('Add official shop profiles to help identify the correct business.') }}</p></div></div>
         <div class="social-grid">
           {% for field, label in social_fields.items() %}
             <label>{{ t(label) }}<div class="url-field"><span>↗</span><input type="url" name="{{ field }}" value="{{ request.form.get(field, report.social_links.get(field, '') if report else '') }}" placeholder="https://"></div></label>

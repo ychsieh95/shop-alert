@@ -767,6 +767,188 @@ def test_user_can_add_and_edit_multiple_controversy_links(client, auth, app):
         ]
 
 
+def test_user_can_link_reported_and_manual_related_shops(client, auth, app):
+    auth.signup()
+    other = client.post(
+        "/reports/new",
+        data=report_payload(name="Sister Branch Coffee", address="9 Sister Road, Taipei"),
+        content_type="multipart/form-data",
+    )
+    assert other.status_code == 302
+    with app.app_context():
+        other_guid = ShopReport.query.filter_by(name="Sister Branch Coffee").one().guid
+
+    form = client.get("/reports/new")
+    assert b"Related shops" in form.data
+    assert b"data-related-shop-editor" in form.data
+    assert b"data-related-shop-search" in form.data
+    assert b"data-related-shop-manual-name" in form.data
+    assert b'data-related-shop-search-url="/api/reports/search"' in form.data
+
+    found = client.get("/api/reports/search", query_string={"q": "sister"}).get_json()
+    assert [report["guid"] for report in found["reports"]] == [other_guid]
+    assert found["reports"][0]["url"] == other.location
+    by_address = client.get(
+        "/api/reports/search", query_string={"q": "Sister Road"}
+    ).get_json()
+    assert len(by_address["reports"]) == 1
+    excluded = client.get(
+        "/api/reports/search", query_string={"q": "sister", "exclude": other_guid}
+    ).get_json()
+    assert excluded["reports"] == []
+    assert client.get("/api/reports/search", query_string={"q": "s"}).get_json() == {
+        "reports": []
+    }
+
+    created = client.post(
+        "/reports/new",
+        data=report_payload(
+            **{
+                "related_shop_guid": [other_guid, "", ""],
+                "related_shop_name": ["", "Unlisted Tea House", ""],
+                "related_shop_address": ["", "12 Quiet Lane, Taipei", ""],
+            }
+        ),
+        content_type="multipart/form-data",
+    )
+    assert created.status_code == 302
+    with app.app_context():
+        report = ShopReport.query.filter_by(name="North Star Coffee").one()
+        assert report.related_shops == [
+            {"guid": other_guid, "name": "", "address": ""},
+            {
+                "guid": "",
+                "name": "Unlisted Tea House",
+                "address": "12 Quiet Lane, Taipei",
+            },
+        ]
+
+    detail = client.get(created.location)
+    assert b"Related shops" in detail.data
+    assert b"Sister Branch Coffee" in detail.data
+    assert other.location.encode() in detail.data
+    assert b"Unlisted Tea House" in detail.data
+    assert b"12 Quiet Lane, Taipei" in detail.data
+
+    edit_form = client.get(f"{created.location}/edit")
+    assert f'value="{other_guid}"'.encode() in edit_form.data
+    assert b'value="Unlisted Tea House"' in edit_form.data
+    # The JSON seed must stay inside a single-quoted attribute: tojson escapes
+    # single quotes but leaves the double quotes of JSON keys intact.
+    entries = json.loads(
+        edit_form.data.decode()
+        .split("data-related-shop-entries='", 1)[1]
+        .split("'", 1)[0]
+    )
+    assert [entry["guid"] for entry in entries] == [other_guid, ""]
+    assert entries[1]["name"] == "Unlisted Tea House"
+
+    updated = client.post(
+        f"{created.location}/edit",
+        data={
+            "name": "North Star Coffee",
+            "address": "100 Community Road, Taipei",
+            "controversy": "This updated report still contains sufficiently detailed information.",
+            "related_shop_guid": ["", ""],
+            "related_shop_name": ["Second Manual Shop", "Second Manual Shop"],
+            "related_shop_address": ["", ""],
+        },
+        follow_redirects=True,
+    )
+    assert updated.status_code == 200
+    assert b"Second Manual Shop" in updated.data
+    assert b"Sister Branch Coffee" not in updated.data
+    with app.app_context():
+        report = ShopReport.query.filter_by(name="North Star Coffee").one()
+        assert report.related_shops == [
+            {"guid": "", "name": "Second Manual Shop", "address": ""}
+        ]
+
+
+def test_related_shops_reject_self_unknown_and_oversized_entries(client, auth, app):
+    auth.signup()
+    created = client.post(
+        "/reports/new",
+        data=report_payload(),
+        content_type="multipart/form-data",
+    )
+    assert created.status_code == 302
+    with app.app_context():
+        report_guid = ShopReport.query.one().guid
+
+    payload = {
+        "name": "North Star Coffee",
+        "address": "100 Community Road, Taipei",
+        "controversy": "This updated report still contains sufficiently detailed information.",
+    }
+    itself = client.post(
+        f"{created.location}/edit",
+        data={**payload, "related_shop_guid": report_guid},
+        follow_redirects=True,
+    )
+    assert b"cannot be listed as its own related shop" in itself.data
+
+    unknown = client.post(
+        f"{created.location}/edit",
+        data={**payload, "related_shop_guid": str(uuid.uuid4())},
+        follow_redirects=True,
+    )
+    assert b"could not be found" in unknown.data
+
+    too_short = client.post(
+        f"{created.location}/edit",
+        data={**payload, "related_shop_name": "A"},
+        follow_redirects=True,
+    )
+    assert b"between 2 and 180 characters" in too_short.data
+
+    too_many = client.post(
+        f"{created.location}/edit",
+        data={
+            **payload,
+            "related_shop_name": [f"Related Shop {index}" for index in range(11)],
+        },
+        follow_redirects=True,
+    )
+    assert b"no more than 10 related shops" in too_many.data
+
+    with app.app_context():
+        assert ShopReport.query.one().related_shops == []
+
+
+def test_archived_related_shop_link_is_hidden_from_the_report(client, auth, app):
+    auth.signup()
+    other = client.post(
+        "/reports/new",
+        data=report_payload(name="Sister Branch Coffee", address="9 Sister Road, Taipei"),
+        content_type="multipart/form-data",
+    )
+    with app.app_context():
+        other_guid = ShopReport.query.filter_by(name="Sister Branch Coffee").one().guid
+
+    created = client.post(
+        "/reports/new",
+        data=report_payload(related_shop_guid=other_guid),
+        content_type="multipart/form-data",
+    )
+    assert b"Sister Branch Coffee" in client.get(created.location).data
+
+    with app.app_context():
+        archived = ShopReport.query.filter_by(name="Sister Branch Coffee").one()
+        archived.archived_at = datetime.now(timezone.utc)
+        db.session.commit()
+
+    detail = client.get(created.location)
+    assert b"Sister Branch Coffee" not in detail.data
+    assert b"Related shops" not in detail.data
+    assert client.get("/api/reports/search", query_string={"q": "sister"}).get_json()[
+        "reports"
+    ] == []
+    with app.app_context():
+        report = ShopReport.query.filter_by(name="North Star Coffee").one()
+        assert report.related_shops == [{"guid": other_guid, "name": "", "address": ""}]
+
+
 def test_user_can_add_search_and_edit_hashtags(client, auth, app):
     auth.signup()
     form = client.get("/reports/new")
@@ -1519,6 +1701,7 @@ def test_existing_sqlite_reports_receive_guids(tmp_path):
         "updated_at",
         "hashtags_json",
         "controversy_links_json",
+        "related_shops_json",
         "address_en_us",
         "address_zh_tw",
         "archived_at",

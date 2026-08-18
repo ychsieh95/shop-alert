@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-08-18",
+    "date_label": {
+      "en-US": "August 18, 2026",
+      "zh-TW": "2026 年 8 月 18 日"
+    },
+    "title": {
+      "en-US": "Related shops, removable evidence, and evenly sized report cards",
+      "zh-TW": "關聯店家、可移除的證據，以及高度一致的紀錄卡片"
+    },
+    "summary": {
+      "en-US": "Reports can now list the shops they are connected to, either by linking an existing ShopAlert report or by naming a shop that is not on ShopAlert. Files chosen for supporting proof can also be removed again before the report is submitted. Report cards now keep their excerpt to the same three lines, so a listing no longer looks ragged when reports differ in length.",
+      "zh-TW": "紀錄現在可以列出相關聯的店家，可連結 ShopAlert 上既有的紀錄，或直接填寫尚未回報的店家。支持證據中已選取的檔案，也可以在送出紀錄前再次移除。紀錄卡片的摘要也固定為三行，列表不會再因為紀錄長短不同而參差不齊。"
+    },
+    "items": {
+      "en-US": [
+        "Added an optional Related shops section to the report form that accepts up to 10 entries per report.",
+        "Searching by shop name or address lists existing reports; selecting one links to that report, so its name and address stay current and the entry disappears if the report is archived or deleted.",
+        "Shops that are not on ShopAlert can be added by hand with a name and an optional address or public link.",
+        "Related shops appear on the report detail page, where linked reports open directly.",
+        "Each file chosen as supporting proof now has a remove button on its preview, so a wrong selection can be dropped without clearing the whole list.",
+        "Report card excerpts now always occupy three lines and are cut with an ellipsis, so cards in the same row align instead of shifting with the length of each report."
+      ],
+      "zh-TW": [
+        "紀錄表單新增選用的「關聯店家」區塊，每筆紀錄最多可加入 10 筆。",
+        "以店名或地址搜尋可列出既有紀錄；選取後會連結至該紀錄，店名與地址會保持最新，若該紀錄遭封存或刪除則會自動不再顯示。",
+        "尚未在 ShopAlert 回報的店家，可手動填寫店名與選填的地址或公開連結。",
+        "關聯店家會顯示在紀錄詳細頁，已連結的紀錄可直接開啟。",
+        "支持證據中每個已選取的檔案，預覽圖上都新增移除按鈕，選錯檔案時不必清空整份清單。",
+        "紀錄卡片的摘要固定顯示三行，超出部分以刪節號截斷，同一列的卡片不會再隨紀錄長短而錯位。"
+      ]
+    }
+  },
+  {
     "date": "2026-08-17",
     "date_label": {
       "en-US": "August 17, 2026",
