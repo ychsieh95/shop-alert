@@ -34,21 +34,23 @@ def test_home_loads(client):
     assert b'data-preference-select' not in response.data
     assert response.data.count(b'data-language-select') == 1
     assert response.data.count(b'data-theme-select') == 1
-    assert response.data.count(b'data-color-theme-select') == 1
+    assert response.data.count(b'data-color-theme-select') == 0
+    assert response.data.count(b'data-preference-trigger') == 1
     assert b'<option value="en-US">EN</option>' in response.data
-    assert b'<option value="light" selected>Light</option>' in response.data
+    assert '<option value="coral:light" selected>Coral · Light</option>'.encode() in response.data
+    assert '<optgroup label="Purple">'.encode() in response.data
+    assert '<option value="purple:dark">Purple · Dark</option>'.encode() in response.data
     assert b"let saved = 'light'" in response.data
     assert b"localStorage.getItem('shopalert-theme') || 'light'" in response.data
-    assert b'<option value="purple">Purple</option>' in response.data
     assert b"shopalert-color-theme" in response.data
     header = response.data.split(b'<header class="site-header">', 1)[1].split(b"</header>", 1)[0]
     footer = response.data.split(b'<footer class="site-footer">', 1)[1]
     assert b'data-language-select' not in header
     assert b'data-theme-select' not in header
-    assert b'data-color-theme-select' not in header
+    assert b'data-preference-trigger' not in header
     assert b'data-language-select' in footer
     assert b'data-theme-select' in footer
-    assert b'data-color-theme-select' in footer
+    assert b'data-preference-trigger' in footer
     assert b'icons/favicon.svg' in response.data
     assert b'icons/favicon.ico' in response.data
     assert b'icons/apple-touch-icon.png' in response.data
@@ -76,11 +78,12 @@ def test_language_preference_persists_and_renders_zh_tw(client):
 
     response = client.get("/")
     assert "了解店面背後".encode() in response.data
-    assert 'aria-label="語言"'.encode() in response.data
-    assert 'aria-label="外觀"'.encode() in response.data
-    assert 'aria-label="主題色彩"'.encode() in response.data
-    assert '<option value="light" selected>淺色</option>'.encode() in response.data
-    assert '<option value="yellow">黃色</option>'.encode() in response.data
+    assert ">語言</label>".encode() in response.data
+    assert ">主題</label>".encode() in response.data
+    assert ">偏好設定</span>".encode() in response.data
+    assert '<optgroup label="黃色">'.encode() in response.data
+    assert '<option value="coral:light" selected>珊瑚色 · 淺色</option>'.encode() in response.data
+    assert '<option value="yellow">黃色</option>'.encode() not in response.data
 
 
 def test_ip_country_sets_default_language_until_user_selects_one(client):
@@ -1424,8 +1427,8 @@ def test_profile_picture_password_and_own_reports(client, auth, app):
     assert b"My profile" in profile.data
     assert profile.data.count(b"data-language-select") == 2
     assert profile.data.count(b"data-theme-select") == 2
-    assert profile.data.count(b"data-color-theme-select") == 2
-    assert b"Choose your language, appearance, and color separately" in profile.data
+    assert profile.data.count(b"data-preference-trigger") == 1
+    assert b"Choose your language, appearance, and color in one place" in profile.data
     assert b"North Star Coffee" in profile.data
     assert created.location.encode() in profile.data
     assert b"@reporter" in profile.data

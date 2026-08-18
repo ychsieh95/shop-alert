@@ -134,8 +134,7 @@
     <div class="footer-bottom">
       <span>© {{ now_year|default(2026) }} ShopAlert · {{ t('Built for accountable communities') }}</span>
       <div class="footer-preferences">
-        <span>{{ t('Preferences') }}</span>
-        {% include "_preference_selector.html" %}
+        {% with preference_variant = 'popover' %}{% include "_preference_selector.html" %}{% endwith %}
       </div>
     </div>
   </footer>

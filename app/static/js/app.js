@@ -2,7 +2,7 @@
   const i18n = window.shopAlertI18n || {};
   const languageSelects = [...document.querySelectorAll('[data-language-select]')];
   const themeSelects = [...document.querySelectorAll('[data-theme-select]')];
-  const colorThemeSelects = [...document.querySelectorAll('[data-color-theme-select]')];
+  const preferenceTriggers = [...document.querySelectorAll('[data-preference-trigger]')];
   const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
   const appearanceThemes = ['system', 'light', 'dark'];
   const colorThemes = ['coral', 'yellow', 'purple'];
@@ -52,11 +52,13 @@
     document.documentElement.dataset.themePreference = preference;
     document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
   };
+  // One select carries both halves of the theme, grouped by color, so the value
+  // travels as "<color>:<appearance>".
+  const themeSelectValue = (color, appearance) => `${color}:${appearance}`;
   const savedTheme = appearanceThemes.includes(readTheme()) ? readTheme() : 'light';
   const savedColorTheme = colorThemes.includes(readColorTheme()) ? readColorTheme() : 'coral';
   languageSelects.forEach((select) => { select.value = document.documentElement.lang; });
-  themeSelects.forEach((select) => { select.value = savedTheme; });
-  colorThemeSelects.forEach((select) => { select.value = savedColorTheme; });
+  themeSelects.forEach((select) => { select.value = themeSelectValue(savedColorTheme, savedTheme); });
 
   languageSelects.forEach((select) => {
     select.addEventListener('change', () => {
@@ -76,18 +78,14 @@
   });
   themeSelects.forEach((select) => {
     select.addEventListener('change', () => {
-      const appearance = appearanceThemes.includes(select.value) ? select.value : 'system';
+      const [selectedColor, selectedAppearance] = select.value.split(':');
+      const color = colorThemes.includes(selectedColor) ? selectedColor : 'coral';
+      const appearance = appearanceThemes.includes(selectedAppearance) ? selectedAppearance : 'light';
       try { localStorage.setItem('shopalert-theme', appearance); } catch (_error) {}
-      applyTheme(appearance);
-      themeSelects.forEach((item) => { item.value = appearance; });
-    });
-  });
-  colorThemeSelects.forEach((select) => {
-    select.addEventListener('change', () => {
-      const color = colorThemes.includes(select.value) ? select.value : 'coral';
       try { localStorage.setItem('shopalert-color-theme', color); } catch (_error) {}
+      applyTheme(appearance);
       document.documentElement.dataset.colorTheme = color;
-      colorThemeSelects.forEach((item) => { item.value = color; });
+      themeSelects.forEach((item) => { item.value = themeSelectValue(color, appearance); });
     });
   });
   systemTheme.addEventListener('change', () => {
@@ -95,6 +93,45 @@
   });
   applyTheme(savedTheme);
   document.documentElement.dataset.colorTheme = savedColorTheme;
+
+  // The footer selector is a popover, so the panel only exists on screen while
+  // its trigger is open.
+  const preferenceSelectorOf = (trigger) => trigger.closest('[data-preference-menu]');
+  const setPreferenceOpen = (selector, open) => {
+    if (!selector) return;
+    selector.dataset.open = open ? 'true' : 'false';
+    const trigger = selector.querySelector('[data-preference-trigger]');
+    if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  preferenceTriggers.forEach((trigger) => {
+    const selector = preferenceSelectorOf(trigger);
+    setPreferenceOpen(selector, false);
+    trigger.addEventListener('click', () => {
+      const open = selector.dataset.open !== 'true';
+      preferenceTriggers.forEach((item) => setPreferenceOpen(preferenceSelectorOf(item), false));
+      setPreferenceOpen(selector, open);
+    });
+  });
+  if (preferenceTriggers.length) {
+    document.addEventListener('click', (event) => {
+      preferenceTriggers.forEach((trigger) => {
+        const selector = preferenceSelectorOf(trigger);
+        if (selector && selector.dataset.open === 'true' && !selector.contains(event.target)) {
+          setPreferenceOpen(selector, false);
+        }
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      preferenceTriggers.forEach((trigger) => {
+        const selector = preferenceSelectorOf(trigger);
+        if (selector && selector.dataset.open === 'true') {
+          setPreferenceOpen(selector, false);
+          trigger.focus();
+        }
+      });
+    });
+  }
 
   preserveScrollForms.forEach((form) => {
     form.addEventListener('submit', () => saveScrollPosition(form));

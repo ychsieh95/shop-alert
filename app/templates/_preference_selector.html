@@ -1,33 +1,45 @@
-<form action="{{ url_for('main.set_language') }}" method="post" class="preference-form combined-preference-form" data-preserve-scroll>
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
-  <input type="hidden" name="locale" value="{{ locale }}" data-preference-locale>
-  <div class="preference-fields">
-    <label class="preference-control language-control">
-      <span class="preference-icon" aria-hidden="true">文</span>
-      <span class="sr-only">{{ t('Language') }}</span>
-      <select data-language-select aria-label="{{ t('Language') }}">
-        <option value="en-US">EN</option>
-        <option value="zh-TW">繁中</option>
-      </select>
-    </label>
-    <label class="preference-control appearance-control">
-      <span class="preference-icon" aria-hidden="true">◐</span>
-      <span class="sr-only">{{ t('Appearance') }}</span>
-      <select data-theme-select aria-label="{{ t('Appearance') }}">
-        <option value="system">{{ t('System') }}</option>
-        <option value="light" selected>{{ t('Light') }}</option>
-        <option value="dark">{{ t('Dark') }}</option>
-      </select>
-    </label>
-    <label class="preference-control color-control">
-      <span class="preference-icon" aria-hidden="true">●</span>
-      <span class="sr-only">{{ t('Theme color') }}</span>
-      <select data-color-theme-select aria-label="{{ t('Theme color') }}">
-        <option value="coral">{{ t('Coral') }}</option>
-        <option value="yellow">{{ t('Yellow') }}</option>
-        <option value="purple">{{ t('Purple') }}</option>
-      </select>
-    </label>
-  </div>
-</form>
+{% set preference_variant = preference_variant|default('inline') %}
+{% set preference_panel_id = 'preference-panel-' ~ preference_variant %}
+{% set preference_colors = [('coral', t('Coral')), ('yellow', t('Yellow')), ('purple', t('Purple'))] %}
+{% set preference_modes = [('system', t('System')), ('light', t('Light')), ('dark', t('Dark'))] %}
+<div class="preference-selector preference-selector-{{ preference_variant }}" data-preference-menu data-preference-variant="{{ preference_variant }}">
+  {% if preference_variant == 'popover' %}
+    <button class="preference-trigger" type="button" data-preference-trigger aria-expanded="false" aria-controls="{{ preference_panel_id }}">
+      <svg class="preference-trigger-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.3"/><path d="M12 2.9v2.2M12 18.9v2.2M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M2.9 12h2.2M18.9 12h2.2M5.6 18.4l1.6-1.6M16.8 7.2l1.6-1.6"/></svg>
+      <span>{{ t('Preferences') }}</span>
+      <svg class="preference-trigger-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
+    </button>
+  {% endif %}
+  <form id="{{ preference_panel_id }}" action="{{ url_for('main.set_language') }}" method="post" class="preference-form" data-preserve-scroll data-preference-panel>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+    <input type="hidden" name="locale" value="{{ locale }}" data-preference-locale>
+    <div class="preference-fields">
+      <div class="preference-field">
+        <label for="{{ preference_panel_id }}-language">{{ t('Language') }}</label>
+        <div class="preference-input">
+          <select id="{{ preference_panel_id }}-language" data-language-select>
+            <option value="en-US">EN</option>
+            <option value="zh-TW">繁中</option>
+          </select>
+          <svg class="preference-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="preference-field">
+        <label for="{{ preference_panel_id }}-theme">{{ t('Theme') }}</label>
+        <div class="preference-input">
+          <select id="{{ preference_panel_id }}-theme" data-theme-select>
+            {% for color, color_label in preference_colors %}
+              <optgroup label="{{ color_label }}">
+                {% for mode, mode_label in preference_modes %}
+                  <option value="{{ color }}:{{ mode }}"{% if color == 'coral' and mode == 'light' %} selected{% endif %}>{{ color_label }} · {{ mode_label }}</option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+          <svg class="preference-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>

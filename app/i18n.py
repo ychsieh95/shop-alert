@@ -140,6 +140,7 @@ ZH_TW = {
     "Appearance": "外觀",
     "Appearance and color": "外觀與色彩",
     "Theme color": "主題色彩",
+    "Theme": "主題",
     "Coral": "珊瑚色",
     "Yellow": "黃色",
     "Purple": "紫色",

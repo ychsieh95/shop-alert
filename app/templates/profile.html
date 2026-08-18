@@ -108,9 +108,9 @@
       <article class="profile-panel profile-preferences-panel">
         <span class="profile-panel-number">04</span>
         <h2>{{ t('Preferences') }}</h2>
-        <p>{{ t('Choose your language, appearance, and color separately.') }}</p>
+        <p>{{ t('Choose your language, appearance, and color in one place.') }}</p>
         <div class="profile-preference-control">
-          {% include "_preference_selector.html" %}
+          {% with preference_variant = 'inline' %}{% include "_preference_selector.html" %}{% endwith %}
         </div>
       </article>
     </div>
