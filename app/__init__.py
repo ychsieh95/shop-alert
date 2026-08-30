@@ -16,6 +16,7 @@ from .i18n import (
     get_timezone_name,
     translate,
 )
+from .media_files import repair_media_folder_permissions
 from .models import User, is_valid_username, normalize_username
 
 
@@ -145,6 +146,13 @@ def create_app(test_config: dict | None = None) -> Flask:
     Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
     Path(app.config["LINK_PREVIEW_FOLDER"]).mkdir(parents=True, exist_ok=True)
     Path(app.config["THUMBNAIL_FOLDER"]).mkdir(parents=True, exist_ok=True)
+    for media_folder_name in ("UPLOAD_FOLDER", "THUMBNAIL_FOLDER"):
+        for failed_path in repair_media_folder_permissions(
+            Path(app.config[media_folder_name])
+        ):
+            app.logger.warning(
+                "Could not repair media file permissions for %s", failed_path
+            )
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
@@ -346,6 +354,35 @@ def create_app(test_config: dict | None = None) -> Flask:
             db.session.execute(
                 text("ALTER TABLE shop_report ADD COLUMN address_zh_tw VARCHAR(500)")
             )
+            db.session.commit()
+
+        media_columns = {
+            column["name"] for column in inspect(db.engine).get_columns("proof_media")
+        }
+        if "position" not in media_columns:
+            db.session.execute(
+                text(
+                    "ALTER TABLE proof_media ADD COLUMN "
+                    "position INTEGER NOT NULL DEFAULT 0"
+                )
+            )
+            media_rows = db.session.execute(
+                text("SELECT id, report_id FROM proof_media ORDER BY report_id, id")
+            ).mappings()
+            current_report_id = None
+            position = 0
+            for media_row in media_rows:
+                if media_row["report_id"] != current_report_id:
+                    current_report_id = media_row["report_id"]
+                    position = 0
+                db.session.execute(
+                    text(
+                        "UPDATE proof_media SET position = :position "
+                        "WHERE id = :media_id"
+                    ),
+                    {"position": position, "media_id": media_row["id"]},
+                )
+                position += 1
             db.session.commit()
 
         missing_guids = db.session.execute(

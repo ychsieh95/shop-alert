@@ -2,6 +2,7 @@ import io
 import json
 import re
 import sqlite3
+import stat
 import time
 import uuid
 from datetime import datetime, timezone
@@ -156,6 +157,8 @@ def test_information_pages_are_public_and_bilingual(client):
     updates = client.get("/updates")
     assert updates.status_code == 200
     assert "What’s new in ShopAlert".encode() in updates.data
+    assert b"Rotatable, reorderable evidence media" in updates.data
+    assert b'<time datetime="2026-08-31">August 31, 2026</time>' in updates.data
     assert b"Evidence-led shop reports" in updates.data
     assert b"Latest" in updates.data
 
@@ -181,6 +184,7 @@ def test_information_pages_are_public_and_bilingual(client):
     )
     updates = client.get("/updates")
     assert "偏好設定與專案資訊".encode() in updates.data
+    assert "可旋轉、可重新排序的證據媒體".encode() in updates.data
     assert "更新紀錄".encode() in updates.data
     introduction = client.get("/introduction")
     assert "更清楚記錄社群的店家經驗".encode() in introduction.data
@@ -648,6 +652,93 @@ def test_report_media_uses_stage_and_thumbnail_gallery(client, auth):
     assert b'data-evidence-lightbox' in response.data
     assert b'data-image-lightbox' in response.data
     assert b'data-lightbox-close' in response.data
+
+
+def test_new_report_preserves_submitted_media_order(client, auth, app):
+    auth.signup()
+    data = report_payload()
+    data["proof"] = [
+        (io.BytesIO(b"first"), "first.jpg", "image/jpeg"),
+        (io.BytesIO(b"second"), "second.jpg", "image/jpeg"),
+        (io.BytesIO(b"third"), "third.jpg", "image/jpeg"),
+    ]
+    data["proof_token"] = ["new:first", "new:second", "new:third"]
+    data["media_order"] = json.dumps(
+        ["new:third", "new:first", "new:second"]
+    )
+
+    response = client.post(
+        "/reports/new", data=data, content_type="multipart/form-data"
+    )
+
+    assert response.status_code == 302
+    with app.app_context():
+        media = ShopReport.query.one().media
+        assert [item.original_name for item in media] == [
+            "third.jpg",
+            "first.jpg",
+            "second.jpg",
+        ]
+        assert [item.position for item in media] == [0, 1, 2]
+
+
+def test_edit_report_reorders_existing_and_new_media_together(client, auth, app):
+    auth.signup()
+    data = report_payload()
+    data["proof"] = [
+        (io.BytesIO(b"first"), "first.jpg", "image/jpeg"),
+        (io.BytesIO(b"second"), "second.jpg", "image/jpeg"),
+    ]
+    created = client.post(
+        "/reports/new", data=data, content_type="multipart/form-data"
+    )
+    with app.app_context():
+        existing = ShopReport.query.one().media
+        first_id, second_id = existing[0].id, existing[1].id
+
+    updated = client.post(
+        f"{created.location}/edit",
+        data={
+            "name": "North Star Coffee",
+            "address": "100 Community Road, Taipei",
+            "controversy": "This updated report has a deliberate mixed media order.",
+            f"media_name_{first_id}": "first.jpg",
+            f"media_name_{second_id}": "second.jpg",
+            "proof": (io.BytesIO(b"new"), "new.jpg", "image/jpeg"),
+            "proof_token": "new:added",
+            "media_order": json.dumps(
+                ["new:added", f"existing:{second_id}", f"existing:{first_id}"]
+            ),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert updated.status_code == 302
+    with app.app_context():
+        media = ShopReport.query.one().media
+        assert [item.original_name for item in media] == [
+            "new.jpg",
+            "second.jpg",
+            "first.jpg",
+        ]
+        assert [item.position for item in media] == [0, 1, 2]
+
+
+def test_report_rejects_unknown_media_order_tokens(client, auth, app):
+    auth.signup()
+    response = client.post(
+        "/reports/new",
+        data=report_payload(
+            proof_token="new:proof",
+            media_order=json.dumps(["new:not-the-upload"]),
+        ),
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 200
+    assert b"Media order is invalid" in response.data
+    with app.app_context():
+        assert ShopReport.query.count() == 0
 
 
 def test_user_can_list_and_edit_own_reports(client, auth, app):
@@ -1671,6 +1762,11 @@ def test_existing_sqlite_reports_receive_guids(tmp_path):
         )
         connection.execute("CREATE TABLE shop_report (id INTEGER PRIMARY KEY)")
         connection.execute("INSERT INTO shop_report (id) VALUES (1)")
+        connection.execute(
+            "CREATE TABLE proof_media (id INTEGER PRIMARY KEY, report_id INTEGER)"
+        )
+        connection.execute("INSERT INTO proof_media (id, report_id) VALUES (8, 1)")
+        connection.execute("INSERT INTO proof_media (id, report_id) VALUES (3, 1)")
 
     create_app(
         {
@@ -1692,6 +1788,12 @@ def test_existing_sqlite_reports_receive_guids(tmp_path):
         user_columns = {
             row[1] for row in connection.execute('PRAGMA table_info("user")')
         }
+        media_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(proof_media)")
+        }
+        media_positions = connection.execute(
+            "SELECT id, position FROM proof_media ORDER BY position"
+        ).fetchall()
         migrated_guid = connection.execute(
             "SELECT guid FROM shop_report WHERE id = 1"
         ).fetchone()[0]
@@ -1716,6 +1818,8 @@ def test_existing_sqlite_reports_receive_guids(tmp_path):
         "banned_at",
         "username",
     }.issubset(user_columns)
+    assert "position" in media_columns
+    assert media_positions == [(3, 0), (8, 1)]
     assert str(uuid.UUID(migrated_guid)) == migrated_guid
     assert migrated_username == "legacy_user"
 
@@ -1838,6 +1942,7 @@ def test_media_thumbnail_is_downscaled_cached_and_reused(client, auth, app):
 
     cached = list(thumbnail_folder.glob("*.webp"))
     assert len(cached) == 1
+    assert stat.S_IMODE(cached[0].stat().st_mode) == 0o644
     # A second request is served from the cache instead of being generated again.
     cached[0].write_bytes(b"cached-thumbnail-marker")
     repeated = client.get(f"/media/{media_id}/thumbnail")

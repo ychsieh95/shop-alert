@@ -754,30 +754,118 @@
     similarReportDialog?.addEventListener('close', resetSimilarReportViewer);
   }
 
+  const applyMediaPreviewRotation = (media, preview, rotation) => {
+    if (!media || !preview) return;
+    const quarterTurn = rotation % 180 !== 0;
+    const scale = quarterTurn
+      ? Math.min(
+        preview.clientWidth / preview.clientHeight,
+        preview.clientHeight / preview.clientWidth,
+      )
+      : 1;
+    media.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+  };
+
+  document.querySelectorAll('[data-existing-media]').forEach((item) => {
+    const preview = item.querySelector('.existing-media-preview');
+    const media = item.querySelector('[data-existing-media-element]');
+    const rotationInput = item.querySelector('[data-existing-media-rotation]');
+    if (!preview || !media || !rotationInput) return;
+    const updateRotation = () => {
+      applyMediaPreviewRotation(media, preview, Number(rotationInput.value) || 0);
+    };
+    item.querySelectorAll('[data-existing-media-rotate]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const rotation = Number(rotationInput.value) || 0;
+        const amount = Number(button.dataset.existingMediaRotate) || 0;
+        rotationInput.value = String((rotation + amount + 360) % 360);
+        updateRotation();
+      });
+    });
+    media.addEventListener('load', updateRotation);
+    media.addEventListener('loadedmetadata', updateRotation);
+    if (typeof ResizeObserver === 'function') {
+      item.mediaRotationObserver = new ResizeObserver(updateRotation);
+      item.mediaRotationObserver.observe(preview);
+    }
+    requestAnimationFrame(updateRotation);
+  });
+
   const fileInput = document.querySelector('[data-proof-input]');
   const uploadZone = document.querySelector('[data-upload-zone]');
   const previews = document.querySelector('[data-upload-previews]');
-  if (fileInput && uploadZone && previews) {
+  const mediaOrderInput = document.querySelector('[data-media-order]');
+  if (fileInput && uploadZone && previews && mediaOrderInput) {
     const selectedFiles = [];
+    const existingItems = [...previews.querySelectorAll('[data-media-order-token]')];
+    let mediaOrder = existingItems.map((item) => item.dataset.mediaOrderToken);
+    let nextUploadToken = 0;
+    const updatePreviewRotation = (selectedFile) => {
+      const media = selectedFile.previewElement;
+      const preview = media?.parentElement;
+      applyMediaPreviewRotation(media, preview, selectedFile.rotation);
+    };
+    const resizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => selectedFiles.forEach(updatePreviewRotation))
+      : null;
     const syncFileInput = () => {
       const transfer = new DataTransfer();
       selectedFiles.forEach(({ file }) => transfer.items.add(file));
       fileInput.files = transfer.files;
     };
+    const syncMediaOrder = () => {
+      mediaOrderInput.value = JSON.stringify(mediaOrder);
+    };
+    const updateMoveButtons = () => {
+      previews.querySelectorAll('[data-media-order-token]').forEach((item) => {
+        const index = mediaOrder.indexOf(item.dataset.mediaOrderToken);
+        const earlier = item.querySelector('[data-media-move="-1"]');
+        const later = item.querySelector('[data-media-move="1"]');
+        if (earlier) earlier.disabled = index <= 0;
+        if (later) later.disabled = index < 0 || index >= mediaOrder.length - 1;
+      });
+    };
+    const moveMedia = (token, amount) => {
+      const index = mediaOrder.indexOf(token);
+      const destination = index + amount;
+      if (index < 0 || destination < 0 || destination >= mediaOrder.length) return;
+      [mediaOrder[index], mediaOrder[destination]] = [
+        mediaOrder[destination],
+        mediaOrder[index],
+      ];
+      selectedFiles.sort(
+        (left, right) => mediaOrder.indexOf(left.token) - mediaOrder.indexOf(right.token),
+      );
+      syncFileInput();
+      renderFiles();
+    };
+    const bindMoveControls = (item) => {
+      item.querySelectorAll('[data-media-move]').forEach((button) => {
+        button.addEventListener('click', () => {
+          moveMedia(item.dataset.mediaOrderToken, Number(button.dataset.mediaMove));
+        });
+      });
+    };
     const removeFile = (selectedFile) => {
       const index = selectedFiles.indexOf(selectedFile);
       if (index < 0) return;
       selectedFiles.splice(index, 1);
+      mediaOrder = mediaOrder.filter((token) => token !== selectedFile.token);
       if (selectedFile.previewUrl) URL.revokeObjectURL(selectedFile.previewUrl);
       syncFileInput();
       renderFiles();
     };
     const renderFiles = () => {
+      resizeObserver?.disconnect();
       previews.replaceChildren();
+      const renderedItems = new Map(
+        existingItems.map((item) => [item.dataset.mediaOrderToken, item]),
+      );
       selectedFiles.forEach((selectedFile) => {
         const { file } = selectedFile;
         const row = document.createElement('div');
         row.className = 'upload-file';
+        row.dataset.mediaOrderToken = selectedFile.token;
         const preview = document.createElement('span');
         preview.className = 'upload-file-preview';
         if (!selectedFile.previewUrl) selectedFile.previewUrl = URL.createObjectURL(file);
@@ -788,6 +876,7 @@
           video.muted = true;
           video.preload = 'metadata';
           video.playsInline = true;
+          selectedFile.previewElement = video;
           const playIcon = document.createElement('i');
           playIcon.textContent = '▶';
           playIcon.setAttribute('aria-hidden', 'true');
@@ -796,8 +885,17 @@
           const image = document.createElement('img');
           image.src = selectedFile.previewUrl;
           image.alt = '';
+          selectedFile.previewElement = image;
           preview.append(image);
         }
+        selectedFile.previewElement.addEventListener(
+          'loadedmetadata',
+          () => updatePreviewRotation(selectedFile),
+        );
+        selectedFile.previewElement.addEventListener(
+          'load',
+          () => updatePreviewRotation(selectedFile),
+        );
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
         removeButton.className = 'upload-file-remove';
@@ -806,6 +904,54 @@
         removeButton.setAttribute('aria-label', `${i18n.removeFile || 'Remove file'}: ${file.name}`);
         removeButton.addEventListener('click', () => removeFile(selectedFile));
         preview.append(removeButton);
+        const rotationControls = document.createElement('span');
+        rotationControls.className = 'upload-file-rotation';
+        const rotationInput = document.createElement('input');
+        rotationInput.type = 'hidden';
+        rotationInput.name = 'proof_rotation';
+        rotationInput.value = String(selectedFile.rotation);
+        const rotateButton = (amount, label, arrow) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = arrow;
+          button.title = label;
+          button.setAttribute('aria-label', `${label}: ${file.name}`);
+          button.addEventListener('click', () => {
+            selectedFile.rotation = (selectedFile.rotation + amount + 360) % 360;
+            rotationInput.value = String(selectedFile.rotation);
+            updatePreviewRotation(selectedFile);
+          });
+          return button;
+        };
+        rotationControls.append(
+          rotateButton(-90, i18n.rotateLeft || 'Rotate left', '↶'),
+          rotateButton(90, i18n.rotateRight || 'Rotate right', '↷'),
+        );
+        preview.append(rotationControls);
+        const reorderControls = document.createElement('span');
+        reorderControls.className = 'media-reorder-controls';
+        const moveButton = (amount, label, arrow) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = arrow;
+          button.title = label;
+          button.setAttribute('aria-label', `${label}: ${file.name}`);
+          button.dataset.mediaMove = String(amount);
+          return button;
+        };
+        reorderControls.append(
+          moveButton(-1, i18n.moveUp || 'Move up', '↑'),
+          moveButton(1, i18n.moveDown || 'Move down', '↓'),
+        );
+        preview.append(reorderControls);
+        const dragHandle = document.createElement('span');
+        dragHandle.className = 'media-drag-handle';
+        dragHandle.draggable = true;
+        dragHandle.dataset.mediaDragHandle = '';
+        dragHandle.title = i18n.dragToReorder || 'Drag to reorder';
+        dragHandle.textContent = '⠿';
+        dragHandle.setAttribute('aria-hidden', 'true');
+        preview.append(dragHandle);
         const details = document.createElement('div');
         details.className = 'upload-file-details';
         const meta = document.createElement('div');
@@ -829,16 +975,115 @@
           selectedFile.displayName = nameInput.value;
         });
         nameLabel.append(nameText, nameInput);
-        details.append(meta, nameLabel);
+        const tokenInput = document.createElement('input');
+        tokenInput.type = 'hidden';
+        tokenInput.name = 'proof_token';
+        tokenInput.value = selectedFile.token;
+        details.append(meta, nameLabel, rotationInput, tokenInput);
         row.append(preview, details);
-        previews.append(row);
+        bindMoveControls(row);
+        renderedItems.set(selectedFile.token, row);
+        resizeObserver?.observe(preview);
+        requestAnimationFrame(() => updatePreviewRotation(selectedFile));
       });
+      mediaOrder = mediaOrder.filter((token) => renderedItems.has(token));
+      renderedItems.forEach((_item, token) => {
+        if (!mediaOrder.includes(token)) mediaOrder.push(token);
+      });
+      previews.append(...mediaOrder.map((token) => renderedItems.get(token)));
+      syncMediaOrder();
+      updateMoveButtons();
     };
     const appendFiles = (files) => {
-      [...files].forEach((file) => selectedFiles.push({ file, displayName: file.name }));
+      [...files].forEach((file) => {
+        const token = `new:${Date.now().toString(36)}-${nextUploadToken}`;
+        nextUploadToken += 1;
+        selectedFiles.push({
+          file,
+          displayName: file.name,
+          rotation: 0,
+          token,
+        });
+        mediaOrder.push(token);
+      });
       syncFileInput();
       renderFiles();
     };
+    existingItems.forEach(bindMoveControls);
+    renderFiles();
+    let draggingToken = null;
+    const clearDropTargets = () => {
+      previews.querySelectorAll('.is-dragging, .is-drop-before, .is-drop-after').forEach(
+        (item) => item.classList.remove('is-dragging', 'is-drop-before', 'is-drop-after'),
+      );
+    };
+    const dropAfterItem = (event, item) => {
+      const bounds = item.getBoundingClientRect();
+      const horizontalOffset = (event.clientX - bounds.left) / bounds.width - 0.5;
+      const verticalOffset = (event.clientY - bounds.top) / bounds.height - 0.5;
+      return Math.abs(verticalOffset) > Math.abs(horizontalOffset)
+        ? verticalOffset > 0
+        : horizontalOffset > 0;
+    };
+    previews.addEventListener('dragstart', (event) => {
+      const handle = event.target.closest('[data-media-drag-handle]');
+      const item = handle?.closest('[data-media-order-token]');
+      if (!item) {
+        event.preventDefault();
+        return;
+      }
+      draggingToken = item.dataset.mediaOrderToken;
+      item.classList.add('is-dragging');
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', draggingToken);
+      }
+    });
+    previews.addEventListener('dragover', (event) => {
+      if (!draggingToken) return;
+      const item = event.target.closest('[data-media-order-token]');
+      if (!item || item.dataset.mediaOrderToken === draggingToken) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+      previews.querySelectorAll('.is-drop-before, .is-drop-after').forEach(
+        (candidate) => candidate.classList.remove('is-drop-before', 'is-drop-after'),
+      );
+      item.classList.add(dropAfterItem(event, item) ? 'is-drop-after' : 'is-drop-before');
+    });
+    previews.addEventListener('drop', (event) => {
+      if (!draggingToken) return;
+      const item = event.target.closest('[data-media-order-token]');
+      if (!item || item.dataset.mediaOrderToken === draggingToken) {
+        clearDropTargets();
+        draggingToken = null;
+        return;
+      }
+      event.preventDefault();
+      const targetToken = item.dataset.mediaOrderToken;
+      const reordered = mediaOrder.filter((token) => token !== draggingToken);
+      let destination = reordered.indexOf(targetToken);
+      if (dropAfterItem(event, item)) destination += 1;
+      reordered.splice(destination, 0, draggingToken);
+      mediaOrder = reordered;
+      selectedFiles.sort(
+        (left, right) => mediaOrder.indexOf(left.token) - mediaOrder.indexOf(right.token),
+      );
+      syncFileInput();
+      draggingToken = null;
+      clearDropTargets();
+      renderFiles();
+    });
+    previews.addEventListener('dragend', () => {
+      draggingToken = null;
+      clearDropTargets();
+    });
+    previews.addEventListener('dragleave', (event) => {
+      if (!previews.contains(event.relatedTarget)) {
+        previews.querySelectorAll('.is-drop-before, .is-drop-after').forEach(
+          (item) => item.classList.remove('is-drop-before', 'is-drop-after'),
+        );
+      }
+    });
     fileInput.addEventListener('change', () => appendFiles(fileInput.files));
     ['dragenter', 'dragover'].forEach((type) => uploadZone.addEventListener(type, (event) => {
       event.preventDefault();

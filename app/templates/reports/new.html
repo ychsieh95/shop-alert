@@ -98,36 +98,45 @@
 
       <section class="form-section" data-form-step="3">
         <div class="form-section-heading"><span>03</span><div><h2>{{ t('Add supporting proof') }}</h2><p>{{ t('At least one image or video is required.') }}</p></div></div>
-        {% if edit_mode and report.media %}
-          <div class="existing-media-list">
-            <strong class="existing-media-title">{{ t('Current evidence') }}</strong>
-            <div class="existing-media-grid">
-              {% for media in report.media %}
-                <div class="existing-media-item">
-                  <span class="existing-media-preview">
-                    {% if media.media_type == 'image' %}
-                      <img src="{{ url_for('main.proof_thumbnail', media_id=media.id) }}" alt="" loading="lazy" decoding="async">
-                    {% else %}
-                      <video src="{{ url_for('main.proof_media', media_id=media.id) }}" muted preload="metadata" playsinline></video>
-                      <i aria-hidden="true">▶</i>
-                    {% endif %}
-                  </span>
-                  <div class="existing-media-meta">
-                    <label class="media-name-field"><span>{{ t('Media filename') }}</span><input type="text" name="media_name_{{ media.id }}" value="{{ request.form.get('media_name_' ~ media.id, media.original_name) }}" maxlength="255" required></label>
-                    <label class="remove-media-choice"><input type="checkbox" name="remove_media" value="{{ media.id }}" {% if request.method == 'POST' and media.id|string in request.form.getlist('remove_media') %}checked{% endif %}> {{ t('Remove') }}</label>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-        {% endif %}
         <label class="upload-zone" data-upload-zone>
           <input type="file" name="proof" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" multiple {% if not edit_mode %}required{% endif %} data-proof-input>
           <span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5"/></svg></span>
           <strong>{{ t('Add more proof, or') if edit_mode else t('Drop proof here, or') }} <u>{{ t('choose files') }}</u></strong>
           <small>JPG, PNG, GIF, WebP, MP4, WebM or MOV · {{ t('50 MB total') }}</small>
         </label>
-        <div class="upload-previews" data-upload-previews></div>
+        {% if edit_mode and report.media %}<strong class="existing-media-title">{{ t('Current evidence') }}</strong>{% endif %}
+        <small class="media-order-help">{{ t('Use the up/down buttons or drag media to choose the display order.') }}</small>
+        <input type="hidden" name="media_order" value="{{ request.form.get('media_order', '') }}" data-media-order>
+        <div class="upload-previews" data-upload-previews>
+          {% if edit_mode and report.media %}
+            {% for media in report.media %}
+                <div class="existing-media-item" data-existing-media data-media-order-token="existing:{{ media.id }}">
+                  <span class="existing-media-preview">
+                    {% if media.media_type == 'image' %}
+                      <img src="{{ url_for('main.proof_thumbnail', media_id=media.id) }}" alt="" loading="lazy" decoding="async" data-existing-media-element>
+                    {% else %}
+                      <video src="{{ url_for('main.proof_media', media_id=media.id) }}" muted preload="metadata" playsinline data-existing-media-element></video>
+                      <i aria-hidden="true">▶</i>
+                    {% endif %}
+                    <span class="upload-file-rotation">
+                      <button type="button" title="{{ t('Rotate left') }}" aria-label="{{ t('Rotate left') }}: {{ media.original_name }}" data-existing-media-rotate="-90">↶</button>
+                      <button type="button" title="{{ t('Rotate right') }}" aria-label="{{ t('Rotate right') }}: {{ media.original_name }}" data-existing-media-rotate="90">↷</button>
+                    </span>
+                    <span class="media-reorder-controls">
+                      <button type="button" title="{{ t('Move up') }}" aria-label="{{ t('Move up') }}: {{ media.original_name }}" data-media-move="-1">↑</button>
+                      <button type="button" title="{{ t('Move down') }}" aria-label="{{ t('Move down') }}: {{ media.original_name }}" data-media-move="1">↓</button>
+                    </span>
+                    <span class="media-drag-handle" draggable="true" data-media-drag-handle title="{{ t('Drag to reorder') }}" aria-hidden="true">⠿</span>
+                  </span>
+                  <div class="existing-media-meta">
+                    <input type="hidden" name="media_rotation_{{ media.id }}" value="{{ request.form.get('media_rotation_' ~ media.id, '0') }}" data-existing-media-rotation>
+                    <label class="media-name-field"><span>{{ t('Media filename') }}</span><input type="text" name="media_name_{{ media.id }}" value="{{ request.form.get('media_name_' ~ media.id, media.original_name) }}" maxlength="255" required></label>
+                    <label class="remove-media-choice"><input type="checkbox" name="remove_media" value="{{ media.id }}" {% if request.method == 'POST' and media.id|string in request.form.getlist('remove_media') %}checked{% endif %}> {{ t('Remove') }}</label>
+                  </div>
+                </div>
+            {% endfor %}
+          {% endif %}
+        </div>
       </section>
 
       <section class="form-section">

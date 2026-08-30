@@ -4,6 +4,8 @@ import json
 import hashlib
 import math
 import os
+import re
+import shutil
 import tempfile
 import time
 import uuid
@@ -33,6 +35,8 @@ from .extensions import db
 from .i18n import SUPPORTED_LOCALES, get_locale, translate
 from .cloudflare_url_scanner import CloudflareURLScannerError, scan_url
 from .link_preview import LinkPreviewError, generate_link_preview, is_public_http_url
+from .media_files import make_media_file_readable
+from .media_rotation import parse_rotation, rotate_media_file
 from .thumbnails import (
     THUMBNAIL_MIME_TYPE,
     ThumbnailError,
@@ -54,6 +58,7 @@ main_bp = Blueprint("main", __name__)
 
 IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
 VIDEO_EXTENSIONS = {"mp4", "webm", "mov", "m4v"}
+MEDIA_UPLOAD_TOKEN_PATTERN = re.compile(r"new:[A-Za-z0-9_-]{1,80}\Z")
 SOCIAL_FIELDS = {
     "facebook": "Facebook",
     "instagram": "Instagram",
@@ -455,6 +460,36 @@ def _media_display_name(value: str, fallback: str, extension: str) -> str | None
     return name if submitted_extension == extension.lower() else None
 
 
+def _media_upload_token(values: list[str], index: int) -> str | None:
+    if index >= len(values):
+        return f"new:{index}"
+    token = values[index].strip()
+    return token if MEDIA_UPLOAD_TOKEN_PATTERN.fullmatch(token) else None
+
+
+def _ordered_media_tokens(value: str, expected_tokens: list[str]) -> list[str] | None:
+    """Validate a client order and append any no-JavaScript fallback tokens."""
+
+    if len(expected_tokens) != len(set(expected_tokens)):
+        return None
+    if not value.strip():
+        return expected_tokens
+    try:
+        submitted_tokens = json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if (
+        not isinstance(submitted_tokens, list)
+        or any(not isinstance(token, str) for token in submitted_tokens)
+        or len(submitted_tokens) != len(set(submitted_tokens))
+        or any(token not in expected_tokens for token in submitted_tokens)
+    ):
+        return None
+    return submitted_tokens + [
+        token for token in expected_tokens if token not in submitted_tokens
+    ]
+
+
 def _is_current_user_admin() -> bool:
     admin_email = current_app.config.get("ADMIN_EMAIL", "")
     return bool(
@@ -844,6 +879,8 @@ def create_report():
         longitude = None if is_online else _float_between(request.form.get("longitude", ""), -180, 180)
         uploads = [file for file in request.files.getlist("proof") if file.filename]
         submitted_media_names = request.form.getlist("proof_name")
+        submitted_media_rotations = request.form.getlist("proof_rotation")
+        submitted_media_tokens = request.form.getlist("proof_token")
         links = {
             key: request.form.get(key, "").strip()
             for key in SOCIAL_FIELDS
@@ -888,14 +925,38 @@ def create_report():
                 display_name = _media_display_name(
                     submitted_name, upload.filename, extension
                 )
+                rotation = parse_rotation(
+                    submitted_media_rotations[index]
+                    if index < len(submitted_media_rotations)
+                    else 0
+                )
+                if rotation is None:
+                    errors.append("Choose a valid media rotation.")
+                upload_token = _media_upload_token(submitted_media_tokens, index)
+                if upload_token is None:
+                    errors.append("Media order is invalid. Please reorder the files.")
                 if display_name is None:
                     errors.append(
                         "Media names must be valid filenames and keep their original extension."
                     )
                 else:
                     validated_uploads.append(
-                        (upload, media_type, extension, display_name)
+                        (
+                            upload,
+                            media_type,
+                            extension,
+                            display_name,
+                            rotation,
+                            upload_token,
+                        )
                     )
+
+        upload_tokens = [item[5] for item in validated_uploads]
+        media_order = _ordered_media_tokens(
+            request.form.get("media_order", ""), upload_tokens
+        )
+        if media_order is None:
+            errors.append("Media order is invalid. Please reorder the files.")
 
         if not errors:
             submitted_at = utcnow()
@@ -921,17 +982,30 @@ def create_report():
             saved_paths = []
             try:
                 upload_path = Path(current_app.config["UPLOAD_FOLDER"])
-                for upload, media_type, extension, display_name in validated_uploads:
+                media_positions = {
+                    token: position for position, token in enumerate(media_order)
+                }
+                for (
+                    upload,
+                    media_type,
+                    extension,
+                    display_name,
+                    rotation,
+                    upload_token,
+                ) in validated_uploads:
                     stored_name = f"{uuid.uuid4().hex}.{extension}"
                     destination = upload_path / stored_name
                     upload.save(destination)
                     saved_paths.append(destination)
+                    make_media_file_readable(destination)
+                    rotate_media_file(destination, media_type, rotation)
                     report.media.append(
                         ProofMedia(
                             stored_name=stored_name,
                             original_name=display_name,
                             media_type=media_type,
                             mime_type=upload.mimetype,
+                            position=media_positions[upload_token],
                         )
                     )
                 db.session.commit()
@@ -1212,6 +1286,8 @@ def edit_report(report_guid):
         )
         uploads = [file for file in request.files.getlist("proof") if file.filename]
         submitted_media_names = request.form.getlist("proof_name")
+        submitted_media_rotations = request.form.getlist("proof_rotation")
+        submitted_media_tokens = request.form.getlist("proof_token")
         links = {
             key: request.form.get(key, "").strip()
             for key in SOCIAL_FIELDS
@@ -1225,6 +1301,7 @@ def edit_report(report_guid):
         ]
         media_to_keep = [media for media in report.media if media not in media_to_remove]
         renamed_media = {}
+        existing_media_rotations = {}
         errors = []
 
         if not 2 <= len(name) <= 180:
@@ -1264,6 +1341,13 @@ def edit_report(report_guid):
                 )
             else:
                 renamed_media[media.id] = display_name
+            rotation = parse_rotation(
+                request.form.get(f"media_rotation_{media.id}", "0")
+            )
+            if rotation is None:
+                errors.append("Choose a valid media rotation.")
+            else:
+                existing_media_rotations[media.id] = rotation
 
         validated_uploads = []
         for index, upload in enumerate(uploads):
@@ -1282,14 +1366,41 @@ def edit_report(report_guid):
                 display_name = _media_display_name(
                     submitted_name, upload.filename, extension
                 )
+                rotation = parse_rotation(
+                    submitted_media_rotations[index]
+                    if index < len(submitted_media_rotations)
+                    else 0
+                )
+                if rotation is None:
+                    errors.append("Choose a valid media rotation.")
+                upload_token = _media_upload_token(submitted_media_tokens, index)
+                if upload_token is None:
+                    errors.append("Media order is invalid. Please reorder the files.")
                 if display_name is None:
                     errors.append(
                         "Media names must be valid filenames and keep their original extension."
                     )
                 else:
                     validated_uploads.append(
-                        (upload, media_type, extension, display_name)
+                        (
+                            upload,
+                            media_type,
+                            extension,
+                            display_name,
+                            rotation,
+                            upload_token,
+                        )
                     )
+
+        expected_media_tokens = [
+            *(f"existing:{media.id}" for media in report.media),
+            *(item[5] for item in validated_uploads),
+        ]
+        media_order = _ordered_media_tokens(
+            request.form.get("media_order", ""), expected_media_tokens
+        )
+        if media_order is None:
+            errors.append("Media order is invalid. Please reorder the files.")
 
         remaining_media = len(report.media) - len(media_to_remove) + len(validated_uploads)
         if remaining_media < 1:
@@ -1310,9 +1421,21 @@ def edit_report(report_guid):
             report.related_shops = related_shops
             report.social_links = links
             report.updated_at = utcnow()
+            removed_tokens = {
+                f"existing:{media.id}" for media in media_to_remove
+            }
+            effective_media_order = [
+                token for token in media_order if token not in removed_tokens
+            ]
+            media_positions = {
+                token: position for position, token in enumerate(effective_media_order)
+            }
             for media in media_to_keep:
                 media.original_name = renamed_media[media.id]
+                media.position = media_positions[f"existing:{media.id}"]
             saved_paths = []
+            rotation_backups = []
+            rotated_media = []
             removed_paths = [
                 Path(current_app.config["UPLOAD_FOLDER"]) / media.stored_name
                 for media in media_to_remove
@@ -1321,17 +1444,47 @@ def edit_report(report_guid):
                 upload_path = Path(current_app.config["UPLOAD_FOLDER"])
                 for media in media_to_remove:
                     db.session.delete(media)
-                for upload, media_type, extension, display_name in validated_uploads:
+                for media in media_to_keep:
+                    rotation = existing_media_rotations[media.id]
+                    if rotation == 0:
+                        continue
+                    source = upload_path / media.stored_name
+                    backup_handle, backup_name = tempfile.mkstemp(
+                        dir=upload_path,
+                        prefix=f".{source.stem}-rotation-backup-",
+                        suffix=source.suffix,
+                    )
+                    os.close(backup_handle)
+                    backup = Path(backup_name)
+                    try:
+                        shutil.copy2(source, backup)
+                    except Exception:
+                        backup.unlink(missing_ok=True)
+                        raise
+                    rotation_backups.append((source, backup))
+                    rotate_media_file(source, media.media_type, rotation)
+                    rotated_media.append(media)
+                for (
+                    upload,
+                    media_type,
+                    extension,
+                    display_name,
+                    rotation,
+                    upload_token,
+                ) in validated_uploads:
                     stored_name = f"{uuid.uuid4().hex}.{extension}"
                     destination = upload_path / stored_name
                     upload.save(destination)
                     saved_paths.append(destination)
+                    make_media_file_readable(destination)
+                    rotate_media_file(destination, media_type, rotation)
                     report.media.append(
                         ProofMedia(
                             stored_name=stored_name,
                             original_name=display_name,
                             media_type=media_type,
                             mime_type=upload.mimetype,
+                            position=media_positions[upload_token],
                         )
                     )
                 db.session.commit()
@@ -1339,9 +1492,21 @@ def edit_report(report_guid):
                 db.session.rollback()
                 for path in saved_paths:
                     path.unlink(missing_ok=True)
+                for source, backup in rotation_backups:
+                    try:
+                        os.replace(backup, source)
+                        make_media_file_readable(source)
+                    except OSError:
+                        current_app.logger.exception(
+                            "Could not restore media after a failed rotation"
+                        )
                 current_app.logger.exception("Could not update report")
                 flash("The report could not be updated. Please try again.", "error")
             else:
+                for _source, backup in rotation_backups:
+                    backup.unlink(missing_ok=True)
+                for media in rotated_media:
+                    discard_thumbnail(media.stored_name)
                 for path in removed_paths:
                     path.unlink(missing_ok=True)
                     discard_thumbnail(path.name)

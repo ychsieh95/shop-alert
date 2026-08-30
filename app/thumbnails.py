@@ -14,6 +14,8 @@ from pathlib import Path
 from flask import current_app
 from PIL import Image, ImageOps
 
+from .media_files import make_media_file_readable
+
 
 # Cards render the cover in a 218 px tall box, so this bounding box still looks
 # sharp on high-density screens while staying a fraction of the upload's size.
@@ -53,6 +55,7 @@ def _write_thumbnail(source: Path, target: Path) -> None:
         temporary_path = Path(temporary_name)
         try:
             frame.save(temporary_path, format="WEBP", quality=THUMBNAIL_QUALITY)
+            make_media_file_readable(temporary_path)
             # Replacing atomically keeps concurrent requests from reading a
             # half-written file.
             os.replace(temporary_path, target)
@@ -66,6 +69,7 @@ def ensure_thumbnail(stored_name: str) -> Path:
 
     target = thumbnail_path(stored_name)
     if target.exists():
+        make_media_file_readable(target)
         return target
 
     source = Path(current_app.config["UPLOAD_FOLDER"]) / stored_name

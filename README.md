@@ -16,7 +16,7 @@ Important: reports are community-submitted allegations. A production deployment 
 - Manual shop name/address entry
 - Online-shop reports that do not require a physical address and are excluded from nearby results
 - Optional Google Place Autocomplete that follows the selected interface language and fills editable name, localized address, coordinates, and Place ID fields
-- Required multi-file evidence upload with image and video support; repeated chooser and drag-and-drop selections append to the current list and render responsive pre-publish thumbnails
+- Required multi-file evidence upload with image and video support; repeated chooser and drag-and-drop selections append to the current list, render responsive pre-publish thumbnails, and let each file be rotated before publishing
 - Cached WebP thumbnails generated on first request and served to report cards and gallery rails, so listings load a fraction of the original upload size
 - Report cards whose excerpt always occupies the same three lines, regardless of how long or short the report is, so every card in a row lines up
 - Up to 10 optional, searchable hashtags per report, with Enter/comma-to-label input, removable chips, popular tags, and locale-specific starter suggestions
@@ -31,6 +31,7 @@ Important: reports are community-submitted allegations. A production deployment 
 - Published timestamps plus last-updated timestamps shown only after a report is edited and localized to the visitor's timezone
 - Evidence editing that supports additions and removals while always retaining at least one proof file
 - Editable evidence filenames for new and existing media while preserving the real file type and randomized storage name
+- Persistent media reordering with up/down buttons or drag-and-drop for new reports and edits, including a single order across existing and newly added evidence
 - A report-specific administrator contact modal and protected review inbox
 - Optional Facebook, Instagram, Threads, TikTok, and other official profile links
 - Responsive, accessible UI with clear allegation and responsible-reporting notices, plus a scroll-aware progress indicator on the report form
@@ -48,6 +49,7 @@ Important: reports are community-submitted allegations. A production deployment 
 - SQLite by default; another SQLAlchemy database URL can be supplied
 - Server-rendered Jinja templates and vanilla CSS/JavaScript
 - Pillow for cached listing thumbnails
+- FFmpeg for rotating uploaded videos
 
 ## Run locally
 
@@ -59,6 +61,8 @@ playwright install chromium
 cp .env.example .env
 python run.py
 ```
+
+Install FFmpeg through your operating system's package manager to enable video rotation. The Docker image includes it automatically.
 
 Open `http://127.0.0.1:5000`. The database and uploaded files are created under `instance/`.
 

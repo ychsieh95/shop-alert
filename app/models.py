@@ -91,7 +91,11 @@ class ShopReport(db.Model):
 
     author = db.relationship("User", back_populates="reports")
     media = db.relationship(
-        "ProofMedia", back_populates="report", cascade="all, delete-orphan", lazy=True
+        "ProofMedia",
+        back_populates="report",
+        cascade="all, delete-orphan",
+        lazy=True,
+        order_by="(ProofMedia.position, ProofMedia.id)",
     )
     contacts = db.relationship(
         "ReportContact", back_populates="report", cascade="all, delete-orphan", lazy=True
@@ -192,6 +196,7 @@ class ProofMedia(db.Model):
     original_name = db.Column(db.String(255), nullable=False)
     media_type = db.Column(db.String(16), nullable=False)
     mime_type = db.Column(db.String(120), nullable=False)
+    position = db.Column(db.Integer, default=0, nullable=False)
     report_id = db.Column(db.Integer, db.ForeignKey("shop_report.id"), nullable=False)
 
     report = db.relationship("ShopReport", back_populates="media")

@@ -14,6 +14,8 @@ WORKDIR /app
 COPY requirements.txt /app/requirements.txt
 RUN python3 -m pip install --no-cache-dir -r /app/requirements.txt \
     && python3 -m playwright install --with-deps chromium \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
     && chmod -R a+rX /ms-playwright \
     && rm -rf /var/lib/apt/lists/*
 

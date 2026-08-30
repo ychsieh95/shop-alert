@@ -1,5 +1,38 @@
 [
   {
+    "date": "2026-08-31",
+    "date_label": {
+      "en-US": "August 31, 2026",
+      "zh-TW": "2026 年 8 月 31 日"
+    },
+    "title": {
+      "en-US": "Rotatable, reorderable evidence media",
+      "zh-TW": "可旋轉、可重新排序的證據媒體"
+    },
+    "summary": {
+      "en-US": "Evidence images and videos can now be corrected and arranged before publishing or while editing a report, with persistent ordering and more reliable thumbnail storage.",
+      "zh-TW": "證據圖片與影片現在可在發布前或編輯紀錄時修正方向與調整順序，並永久保存排列結果，同時提升縮圖儲存的可靠性。"
+    },
+    "items": {
+      "en-US": [
+        "Added rotate-left and rotate-right controls to newly selected images and videos on both new-report and edit-report forms.",
+        "Existing evidence can also be rotated while editing; image changes invalidate the old thumbnail, and a backup restores the original media if saving fails.",
+        "Added up/down controls and drag-and-drop reordering that persist one media order across existing evidence and newly selected files; the first item in that order becomes the report cover.",
+        "Added an automatic database migration and legacy backfill for stored media positions.",
+        "Thumbnail files are still generated automatically when missing, and new uploads, rotated media, and generated thumbnails now use deployment-readable file permissions.",
+        "Application startup repairs missing read permissions on existing uploads and thumbnails, preventing owner-only cache files from blocking SFTP backups or deployment access."
+      ],
+      "zh-TW": [
+        "新增向左與向右旋轉控制項，建立及編輯紀錄時皆可調整新選取的圖片與影片。",
+        "編輯紀錄時也可旋轉既有證據；圖片變更會清除舊縮圖，若儲存失敗則會從備份還原原始媒體。",
+        "新增上下移動控制項與拖放排序，可將既有證據與新選取檔案排在同一個永久保存的順序中；順序中的第一個項目會成為紀錄封面。",
+        "新增媒體位置的自動資料庫遷移，並為舊有資料補上原始排列順序。",
+        "縮圖在不存在時仍會自動產生；新上傳、已旋轉媒體及新縮圖現在都會使用部署環境可讀取的檔案權限。",
+        "應用程式啟動時會修復既有上傳與縮圖缺少的讀取權限，避免僅擁有者可讀的快取檔案阻擋 SFTP 備份或部署存取。"
+      ]
+    }
+  },
+  {
     "date": "2026-08-18",
     "date_label": {
       "en-US": "August 18, 2026",
