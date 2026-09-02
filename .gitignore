@@ -1,22 +1,37 @@
-# Environment configuration
-.env
+# Application runtime data
+instance/*
+!instance/uploads/
+instance/uploads/*
+!instance/uploads/.gitkeep
 
-# Python cache and compiled files
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+
+# Private operational files
+private/
+
+# Python build artifacts and caches
+*.egg-info/
 *.py[cod]
 __pycache__/
+build/
+dist/
 
 # Python virtual environments
 .venv/
 venv/
 
-# Test caches
+# Test and analysis artifacts
+.coverage
+.coverage.*
+.mypy_cache/
 .pytest_cache/
-
-# Application runtime data
-instance/*
-!instance/uploads
-instance/uploads/*
-!instance/uploads/.gitkeep
-
-# Private local documentation and operational files
-private/
+.ruff_cache/
+htmlcov/

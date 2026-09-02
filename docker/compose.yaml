@@ -1,11 +1,13 @@
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
+      args:
+        APP_UID: ${APP_UID:-10001}
+      context: ..
+      dockerfile: docker/Dockerfile
     image: shopalert-holey-cc:local
     env_file:
-      - .env
+      - ../.env
     init: true
     ports:
       - "8080:8080"

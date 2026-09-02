@@ -45,7 +45,7 @@ Important: reports are community-submitted allegations. A production deployment 
 ## Technology
 
 - Python 3.10+
-- Flask, Flask-SQLAlchemy, Flask-Login, and Flask-WTF
+- Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF, and Gunicorn
 - SQLite by default; another SQLAlchemy database URL can be supplied
 - Server-rendered Jinja templates and vanilla CSS/JavaScript
 - Pillow for cached listing thumbnails
@@ -76,22 +76,22 @@ Then put the result in `.env` as `SECRET_KEY`. Never commit `.env`.
 
 ## Run with Docker Compose
 
-The production-style image uses `tiangolo/uwsgi-nginx-flask:python3.12`, includes Playwright Chromium, and is named `shopalert-holey-cc:local` by Compose.
+The production-style image uses Python 3.12 with Gunicorn, includes Playwright Chromium and FFmpeg, and runs as the unprivileged UID `10001` by default. Compose names the image `shopalert-holey-cc:local`.
 
 ```bash
 cp .env.example .env
-docker compose up --build -d
-docker compose ps
-docker compose logs -f app
+docker compose -f docker/compose.yaml up --build -d
+docker compose -f docker/compose.yaml ps
+docker compose -f docker/compose.yaml logs -f app
 ```
 
 Open `http://127.0.0.1:8080`. SQLite data, uploads, and link-preview artifacts are persisted in the named volume `shop-alert-data` under `/instance`. The container exposes an HTTP health check against port 8080.
 
 ```bash
-docker compose down
+docker compose -f docker/compose.yaml down
 ```
 
-`docker compose down` does not remove the named volume unless `--volumes` is explicitly supplied. Back up the volume before migration or removal. Local operational helpers, deployment scripts, and database backups belong under the `private/` directory, which is excluded from both Git and the Docker build context, and are not required for the repository setup above.
+`docker compose down` does not remove the named volume unless `--volumes` is explicitly supplied. Back up the volume before migration or removal. To build with a different numeric user ID, set it for the build (for example, `APP_UID=$(id -u) docker compose -f docker/compose.yaml build`); an existing `/instance` volume must be writable by that UID. Local operational helpers, deployment scripts, and database backups belong under the `private/` directory, which is excluded from both Git and the Docker build context, and are not required for the repository setup above.
 
 ## Environment variables
 
@@ -204,7 +204,7 @@ To activate administration, set `ADMIN_EMAIL`, then sign up or log in with that 
 
 ## Production checklist
 
-- Run behind a production WSGI server and HTTPS reverse proxy (the provided Docker image already uses uWSGI behind nginx).
+- Run behind a production WSGI server and HTTPS reverse proxy (the provided Docker image uses Gunicorn; terminate HTTPS at a reverse proxy).
 - Isolate the screenshot browser and enforce outbound firewall rules that deny internal/private networks.
 - Use PostgreSQL or another managed database, object storage for uploads, backups, and malware scanning.
 - Set a strong `SECRET_KEY`, secure cookie settings, trusted proxy configuration, and strict upload/storage permissions.

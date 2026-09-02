@@ -4,24 +4,21 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_supported_dockerfiles_serve_package_static_directory():
-    dockerfiles = (
-        PROJECT_ROOT / "Dockerfile",
-        PROJECT_ROOT / "private" / "Docker" / "Dockerfile",
-    )
+def test_dockerfile_uses_non_root_user_and_checks_static_assets():
+    contents = (PROJECT_ROOT / "docker" / "Dockerfile").read_text(encoding="utf-8")
 
-    for dockerfile in dockerfiles:
-        contents = dockerfile.read_text(encoding="utf-8")
-        assert "STATIC_PATH=/app/app/static" in contents
-        assert "STATIC_URL=/assets" in contents
-        assert "ln -s /app/app/static /app/static" in contents
-        assert "'/assets/css/app.css'" in contents
+    assert "ARG APP_UID=" in contents
+    assert "USER $APP_UID" in contents
+    assert "'/assets/css/app.css'" in contents
+    assert 'CMD ["gunicorn"' in contents
 
 
-def test_supported_dockerfiles_remain_identical():
-    public = (PROJECT_ROOT / "Dockerfile").read_text(encoding="utf-8")
-    private = (PROJECT_ROOT / "private" / "Docker" / "Dockerfile").read_text(
+def test_compose_uses_repository_build_context():
+    contents = (PROJECT_ROOT / "docker" / "compose.yaml").read_text(
         encoding="utf-8"
     )
 
-    assert public == private
+    assert "context: .." in contents
+    assert "dockerfile: docker/Dockerfile" in contents
+    assert "APP_UID: ${APP_UID:-10001}" in contents
+    assert "- ../.env" in contents

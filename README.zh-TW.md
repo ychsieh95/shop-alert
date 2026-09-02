@@ -45,7 +45,7 @@ ShopAlert 是一個以 Flask 開發的社群店家爭議紀錄網站。使用者
 ## 使用技術
 
 - Python 3.10 以上
-- Flask、Flask-SQLAlchemy、Flask-Login、Flask-WTF
+- Flask、Flask-SQLAlchemy、Flask-Login、Flask-WTF、Gunicorn
 - 預設使用 SQLite，也可設定其他 SQLAlchemy 資料庫網址
 - Jinja 伺服器端樣板、原生 CSS 與 JavaScript
 - 使用 Pillow 產生列表縮圖快取
@@ -76,22 +76,22 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 ## 使用 Docker Compose 啟動
 
-正式環境形式的映像檔以 `tiangolo/uwsgi-nginx-flask:python3.12` 為基礎，內含 Playwright Chromium，Compose 使用的映像檔名稱為 `shopalert-holey-cc:local`。
+正式環境形式的映像檔使用 Python 3.12 與 Gunicorn，內含 Playwright Chromium 與 FFmpeg，並預設以非特權 UID `10001` 執行。Compose 使用的映像檔名稱為 `shopalert-holey-cc:local`。
 
 ```bash
 cp .env.example .env
-docker compose up --build -d
-docker compose ps
-docker compose logs -f app
+docker compose -f docker/compose.yaml up --build -d
+docker compose -f docker/compose.yaml ps
+docker compose -f docker/compose.yaml logs -f app
 ```
 
 開啟 `http://127.0.0.1:8080`。SQLite 資料、上傳檔案及連結預覽資料會以 `/instance` 為路徑，持久保存於 `shop-alert-data` 命名 Volume；Container 也包含針對 8080 Port 的 HTTP Health Check。
 
 ```bash
-docker compose down
+docker compose -f docker/compose.yaml down
 ```
 
-除非明確加入 `--volumes`，否則 `docker compose down` 不會移除命名 Volume。搬移或刪除前請先備份。本機操作 Helper、部署指令稿與資料庫備份應存放於 `private/` 目錄；該目錄已同時排除於 Git 與 Docker 建置內容之外，且不影響上述 Repository 設定流程。
+除非明確加入 `--volumes`，否則 `docker compose down` 不會移除命名 Volume。搬移或刪除前請先備份。若要使用不同的數字使用者 ID 建置，請在建置時設定（例如 `APP_UID=$(id -u) docker compose -f docker/compose.yaml build`）；既有的 `/instance` Volume 必須允許該 UID 寫入。本機操作 Helper、部署指令稿與資料庫備份應存放於 `private/` 目錄；該目錄已同時排除於 Git 與 Docker 建置內容之外，且不影響上述 Repository 設定流程。
 
 ## 環境變數
 
@@ -204,7 +204,7 @@ pytest
 
 ## 正式環境檢查清單
 
-- 使用正式 WSGI Server 並置於 HTTPS 反向代理之後（隨附的 Docker 映像已使用 uWSGI 搭配 nginx）。
+- 使用正式 WSGI Server 並置於 HTTPS 反向代理之後（隨附的 Docker 映像使用 Gunicorn，HTTPS 應由反向代理終止）。
 - 隔離截圖瀏覽器，並以對外防火牆禁止連線至內部／私有網路。
 - 使用 PostgreSQL 或其他受管資料庫、物件儲存、備份與惡意檔案掃描。
 - 設定安全的 `SECRET_KEY`、Cookie 安全選項、可信任 Proxy，以及嚴格的上傳與儲存權限。
