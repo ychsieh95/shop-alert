@@ -796,6 +796,9 @@
   const previews = document.querySelector('[data-upload-previews]');
   const mediaOrderInput = document.querySelector('[data-media-order]');
   if (fileInput && uploadZone && previews && mediaOrderInput) {
+    const reportForm = fileInput.closest('[data-report-form]');
+    const uploadSizeStatus = reportForm?.querySelector('[data-upload-size-status]');
+    const maxUploadBytes = Number(reportForm?.dataset.maxUploadBytes) || 0;
     const selectedFiles = [];
     const existingItems = [...previews.querySelectorAll('[data-media-order-token]')];
     let mediaOrder = existingItems.map((item) => item.dataset.mediaOrderToken);
@@ -815,6 +818,25 @@
     };
     const syncMediaOrder = () => {
       mediaOrderInput.value = JSON.stringify(mediaOrder);
+    };
+    const formatUploadSize = (bytes) => {
+      const megabytes = bytes / 1024 / 1024;
+      return `${megabytes.toFixed(megabytes >= 10 ? 1 : 2)} MB`;
+    };
+    const validateUploadSize = () => {
+      const selectedBytes = selectedFiles.reduce((total, { file }) => total + file.size, 0);
+      const tooLarge = maxUploadBytes > 0 && selectedBytes > maxUploadBytes;
+      if (uploadSizeStatus) {
+        uploadSizeStatus.textContent = tooLarge
+          ? (i18n.uploadTooLarge || 'Selected files use {selected}; the upload limit is {limit}.')
+            .replace('{selected}', formatUploadSize(selectedBytes))
+            .replace('{limit}', formatUploadSize(maxUploadBytes))
+          : '';
+      }
+      uploadZone.classList.toggle('upload-too-large', tooLarge);
+      if (tooLarge) fileInput.setAttribute('aria-invalid', 'true');
+      else fileInput.removeAttribute('aria-invalid');
+      return !tooLarge;
     };
     const updateMoveButtons = () => {
       previews.querySelectorAll('[data-media-order-token]').forEach((item) => {
@@ -838,6 +860,7 @@
       );
       syncFileInput();
       renderFiles();
+      validateUploadSize();
     };
     const bindMoveControls = (item) => {
       item.querySelectorAll('[data-media-move]').forEach((button) => {
@@ -854,6 +877,7 @@
       if (selectedFile.previewUrl) URL.revokeObjectURL(selectedFile.previewUrl);
       syncFileInput();
       renderFiles();
+      validateUploadSize();
     };
     const renderFiles = () => {
       resizeObserver?.disconnect();
@@ -1008,6 +1032,7 @@
       });
       syncFileInput();
       renderFiles();
+      validateUploadSize();
     };
     existingItems.forEach(bindMoveControls);
     renderFiles();
@@ -1094,6 +1119,11 @@
       event.preventDefault();
       uploadZone.classList.remove('dragover');
       appendFiles(event.dataTransfer?.files || []);
+    });
+    reportForm?.addEventListener('submit', (event) => {
+      if (validateUploadSize()) return;
+      event.preventDefault();
+      uploadZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
 

@@ -1,5 +1,34 @@
 [
   {
+    "date": "2026-09-03",
+    "date_label": {
+      "en-US": "September 3, 2026",
+      "zh-TW": "2026 年 9 月 3 日"
+    },
+    "title": {
+      "en-US": "Upload-size checks before publishing",
+      "zh-TW": "發布前檢查上傳容量"
+    },
+    "summary": {
+      "en-US": "Report forms now catch oversized evidence selections in the browser before submission, using the deployment's configured upload limit.",
+      "zh-TW": "紀錄表單現在會依據部署環境設定的上傳上限，在送出前直接於瀏覽器檢查超過容量的證據檔案。"
+    },
+    "items": {
+      "en-US": [
+        "Added a combined-size check for evidence chosen across repeated file-picker selections and drag-and-drop actions.",
+        "Oversized selections now show an accessible inline warning and prevent new-report or edit-report submission until enough files are removed.",
+        "The form reads MAX_CONTENT_LENGTH_MB from the server, so its displayed limit and browser-side check follow deployment configuration instead of assuming 50 MB.",
+        "The existing server-side request-size limit remains in place as the authoritative fallback."
+      ],
+      "zh-TW": [
+        "新增證據檔案合計容量檢查，會累計多次檔案選取與拖放操作加入的所有檔案。",
+        "選取的檔案過大時，現在會顯示無障礙行內警告，並阻止建立或編輯紀錄表單送出，直到移除足夠的檔案。",
+        "表單會從伺服器讀取 MAX_CONTENT_LENGTH_MB，顯示的上限與瀏覽器端檢查會跟隨部署設定，不再假設固定為 50 MB。",
+        "既有的伺服器端請求容量上限仍會保留，作為最終防護。"
+      ]
+    }
+  },
+  {
     "date": "2026-08-31",
     "date_label": {
       "en-US": "August 31, 2026",

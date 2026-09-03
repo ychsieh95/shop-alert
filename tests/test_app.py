@@ -459,6 +459,17 @@ def test_new_report_form_has_online_shop_toggle(client, auth):
     assert b'sandbox="allow-forms allow-same-origin allow-scripts"' in response.data
 
 
+def test_report_form_exposes_configured_upload_limit(client, auth, app):
+    app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
+    auth.signup()
+
+    response = client.get("/reports/new")
+
+    assert b'data-max-upload-bytes="12582912"' in response.data
+    assert b"12 MB total" in response.data
+    assert b"data-upload-size-status" in response.data
+
+
 def test_similar_report_lookup_by_name_place_and_location(client, auth, app):
     auth.signup()
     created = client.post(

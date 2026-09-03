@@ -362,6 +362,8 @@ ZH_TW = {
     "Drop proof here, or": "將證據拖放到這裡，或",
     "choose files": "選擇檔案",
     "50 MB total": "總計上限 50 MB",
+    "{limit} MB total": "總計上限 {limit} MB",
+    "Selected files use {selected}; the upload limit is {limit}.": "已選檔案總計 {selected}；上傳上限為 {limit}。",
     "Related shops": "關聯店家",
     "Link shops already reported on ShopAlert, or add ones that are not here yet.": "連結 ShopAlert 上已回報的店家，或加入尚未回報的店家。",
     "Search reported shops": "搜尋已回報的店家",

@@ -22,7 +22,7 @@
       </ol>
     </aside>
 
-    <form method="post" enctype="multipart/form-data" class="report-form" data-report-form>
+    <form method="post" enctype="multipart/form-data" class="report-form" data-report-form data-max-upload-bytes="{{ max_upload_bytes }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="latitude" value="{{ request.form.get('latitude', report.latitude if report and report.latitude is not none else '') }}" data-place-lat>
       <input type="hidden" name="longitude" value="{{ request.form.get('longitude', report.longitude if report and report.longitude is not none else '') }}" data-place-lng>
@@ -99,11 +99,12 @@
       <section class="form-section" data-form-step="3">
         <div class="form-section-heading"><span>03</span><div><h2>{{ t('Add supporting proof') }}</h2><p>{{ t('At least one image or video is required.') }}</p></div></div>
         <label class="upload-zone" data-upload-zone>
-          <input type="file" name="proof" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" multiple {% if not edit_mode %}required{% endif %} data-proof-input>
+          <input type="file" name="proof" accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime" multiple {% if not edit_mode %}required{% endif %} aria-describedby="upload-size-status" data-proof-input>
           <span class="upload-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5"/></svg></span>
           <strong>{{ t('Add more proof, or') if edit_mode else t('Drop proof here, or') }} <u>{{ t('choose files') }}</u></strong>
-          <small>JPG, PNG, GIF, WebP, MP4, WebM or MOV · {{ t('50 MB total') }}</small>
+          <small>JPG, PNG, GIF, WebP, MP4, WebM or MOV · {{ t('{limit} MB total').format(limit=(max_upload_bytes / 1024 / 1024)|round|int) }}</small>
         </label>
+        <small class="upload-size-status" id="upload-size-status" data-upload-size-status aria-live="polite"></small>
         {% if edit_mode and report.media %}<strong class="existing-media-title">{{ t('Current evidence') }}</strong>{% endif %}
         <small class="media-order-help">{{ t('Use the up/down buttons or drag media to choose the display order.') }}</small>
         <input type="hidden" name="media_order" value="{{ request.form.get('media_order', '') }}" data-media-order>

@@ -1033,6 +1033,7 @@ def create_report():
         popular_hashtags=popular_hashtags,
         suggested_hashtags=suggested_hashtags,
         google_maps_api_key=current_app.config["GOOGLE_MAPS_API_KEY"],
+        max_upload_bytes=current_app.config["MAX_CONTENT_LENGTH"],
     )
 
 
@@ -1529,6 +1530,7 @@ def edit_report(report_guid):
         popular_hashtags=popular_hashtags,
         suggested_hashtags=suggested_hashtags,
         google_maps_api_key=current_app.config["GOOGLE_MAPS_API_KEY"],
+        max_upload_bytes=current_app.config["MAX_CONTENT_LENGTH"],
     )
 
 

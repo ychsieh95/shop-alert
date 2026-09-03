@@ -16,7 +16,7 @@ Important: reports are community-submitted allegations. A production deployment 
 - Manual shop name/address entry
 - Online-shop reports that do not require a physical address and are excluded from nearby results
 - Optional Google Place Autocomplete that follows the selected interface language and fills editable name, localized address, coordinates, and Place ID fields
-- Required multi-file evidence upload with image and video support; repeated chooser and drag-and-drop selections append to the current list, render responsive pre-publish thumbnails, and let each file be rotated before publishing
+- Required multi-file evidence upload with image and video support; repeated chooser and drag-and-drop selections append to the current list, render responsive pre-publish thumbnails, let each file be rotated, and check the combined size before publishing
 - Cached WebP thumbnails generated on first request and served to report cards and gallery rails, so listings load a fraction of the original upload size
 - Report cards whose excerpt always occupies the same three lines, regardless of how long or short the report is, so every card in a row lines up
 - Up to 10 optional, searchable hashtags per report, with Enter/comma-to-label input, removable chips, popular tags, and locale-specific starter suggestions
@@ -119,7 +119,7 @@ docker compose -f docker/compose.yaml down
 | `CLOUDFLARE_URL_SCANNER_RESULT_TIMEOUT_SECONDS` | No | `40` | Maximum time to wait for a scan result |
 | `CLOUDFLARE_URL_SCANNER_POLL_INTERVAL_SECONDS` | No | `10` | Delay between result checks; Cloudflare recommends 10–30 seconds |
 | `CLOUDFLARE_URL_SCANNER_CACHE_HOURS` | No | `24` | How long a Cloudflare verdict is reused |
-| `MAX_CONTENT_LENGTH_MB` | No | `50` | Maximum total request/upload size in MB |
+| `MAX_CONTENT_LENGTH_MB` | No | `50` | Maximum total request/upload size in MB; report forms display this limit and block oversized evidence selections before submission |
 
 ### IP-based localization and timezones
 
