@@ -76,7 +76,7 @@ Then put the result in `.env` as `SECRET_KEY`. Never commit `.env`.
 
 ## Run with Docker Compose
 
-The production-style image uses Python 3.12 with Gunicorn, includes Playwright Chromium and FFmpeg, and runs as the unprivileged UID `10001` by default. Compose names the image `shopalert-holey-cc:local`.
+The production-style image uses Python 3.12 with Gunicorn, includes Playwright Chromium and FFmpeg, and runs as the unprivileged UID `1654` by default. Compose names the image `shopalert-holey-cc:local`.
 
 ```bash
 cp .env.example .env

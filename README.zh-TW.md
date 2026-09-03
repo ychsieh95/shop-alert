@@ -76,7 +76,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 ## 使用 Docker Compose 啟動
 
-正式環境形式的映像檔使用 Python 3.12 與 Gunicorn，內含 Playwright Chromium 與 FFmpeg，並預設以非特權 UID `10001` 執行。Compose 使用的映像檔名稱為 `shopalert-holey-cc:local`。
+正式環境形式的映像檔使用 Python 3.12 與 Gunicorn，內含 Playwright Chromium 與 FFmpeg，並預設以非特權 UID `1654` 執行。Compose 使用的映像檔名稱為 `shopalert-holey-cc:local`。
 
 ```bash
 cp .env.example .env

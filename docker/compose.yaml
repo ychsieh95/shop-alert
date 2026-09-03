@@ -2,7 +2,7 @@ services:
   app:
     build:
       args:
-        APP_UID: ${APP_UID:-10001}
+        APP_UID: ${APP_UID:-1654}
       context: ..
       dockerfile: docker/Dockerfile
     image: shopalert-holey-cc:local

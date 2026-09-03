@@ -20,5 +20,5 @@ def test_compose_uses_repository_build_context():
 
     assert "context: .." in contents
     assert "dockerfile: docker/Dockerfile" in contents
-    assert "APP_UID: ${APP_UID:-10001}" in contents
+    assert "APP_UID: ${APP_UID:-1654}" in contents
     assert "- ../.env" in contents
